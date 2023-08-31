@@ -1,0 +1,8 @@
+.DS_Store
+.vscode
+secret.yaml
+.env
+
+/static
+db-data
+
