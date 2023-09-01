@@ -6,7 +6,7 @@ from sse_starlette.sse import EventSourceResponse
 from repository import usage_repo
 
 from repository.auth_repo import LineUserInfo
-from repository.helpers import GeneratorValue
+from repository.llm_facade import LLMFinalContent
 
 
 code_router = APIRouter(prefix="/code")
@@ -27,19 +27,17 @@ async def completion_stream(
     body: CompletionStream,
 ):
     async def event_generator():
-        gen = GeneratorValue(code_repo.completion(body.query))
-        for content in gen:
-            content = content.get("content")
-            yield content
-
-        result, usage = gen.value
-
-        usage_repo.create(
-            user_id=user.sub,
-            userdetail=user,
-            query=body.query,
-            result=result,
-            usage=usage,
-        )
+        for content in code_repo.completion(body.query):
+            yield content.json()
+            # if isinstance(content, LLMStreamContent):
+            #     yield content
+            if isinstance(content, LLMFinalContent):
+                usage_repo.create(
+                    user_id=user.sub,
+                    userdetail=user,
+                    query=body.query,
+                    result=content.final_content,
+                    usage=content.usage,
+                )
 
     return EventSourceResponse(event_generator())

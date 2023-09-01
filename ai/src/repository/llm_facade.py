@@ -1,5 +1,5 @@
 import json
-from typing import Any, Generator, Tuple
+from typing import Any, Generator
 from pydantic import BaseModel
 
 import requests
@@ -22,15 +22,27 @@ class LLMUsage(BaseModel):
     tokens_predicted: int = 0
 
 
+class LLMFinalContent(BaseModel):
+    final_content: str
+    usage: LLMUsage
+    stop: bool
+
+
+class LLMStreamContent(BaseModel):
+    content: str
+    stop: bool
+
+
 class LLMFacade:
     def __init__(self, endpoint: str) -> None:
         self.endpoint = endpoint
 
     @staticmethod
-    def make_prompt_request_body(prompt: str):
+    def _make_prompt_request_body(prompt: str):
+        # TODO: Move these configuration to env
         return json.dumps(
             {
-                "stream": True,
+                "stream": True,  # Always streaming for now
                 "n_predict": 500,
                 "temperature": 0,
                 "stop": ["</s>"],
@@ -51,9 +63,11 @@ class LLMFacade:
             }
         )
 
-    def completion(self, prompt: str) -> Generator[dict, Any, Tuple[str, LLMUsage]]:
+    def completion(
+        self, prompt: str
+    ) -> Generator[LLMFinalContent | LLMStreamContent, Any, None]:
         s = requests.Session()
-        data = self.make_prompt_request_body(prompt)
+        data = self._make_prompt_request_body(prompt)
 
         with s.post(f"{self.endpoint}/completion", data=data, stream=True) as resp:
             content = ""
@@ -66,13 +80,17 @@ class LLMFacade:
                             value["timings"]["prompt_per_second"] = (
                                 value["timings"]["prompt_per_second"] or 0.0
                             )
+                            value["final_content"] = content
                             usage = LLMUsage.parse_obj(value)
-                            return content, usage
+                            final_content = LLMFinalContent(
+                                final_content=content, usage=usage, stop=True
+                            )
+                            yield final_content
                         else:
-                            content += value.get("content")
-                            yield value
-                    except Exception as e:
-                        print("ERR processing", line)
-                        raise e
+                            llm_content = LLMStreamContent.parse_obj(value)
+                            content += llm_content.content
+                            yield llm_content
 
-        return "", LLMUsage()
+                    except Exception as e:
+                        print("LLM completion ERR processing stream", line)
+                        raise e

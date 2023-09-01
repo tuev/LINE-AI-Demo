@@ -10,6 +10,12 @@ def get_timestamp():
     return datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
 
 
+def print_prompt(prompt: str):
+    print(">>>")
+    print(prompt)
+    print("===")
+
+
 class GeneratorValue(Generic[T, S]):
     def __init__(self, gen: Generator[T, Any, S]):
         self.gen: Generator[T, Any, S] = gen

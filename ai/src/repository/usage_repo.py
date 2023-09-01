@@ -1,6 +1,6 @@
 from peewee import CharField, DateTimeField, TextField
-from repository.auth_repo import LineUserInfo
 
+from repository.auth_repo import LineUserInfo
 from repository.base_db import BaseDBModel, get_db
 from repository.helpers import get_timestamp
 from repository.llm_facade import LLMUsage
