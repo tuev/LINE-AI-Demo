@@ -1,15 +1,16 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { streamLoading, streamContent, sendPrompt } from '$lib/application/codeCompletionStore';
 	import { Heading, Textarea, Label, Button, Spinner, Radio } from 'flowbite-svelte';
 	import ResponseContent from './ResponseContent.svelte';
 	import { isLoggedIn, liffProfile, login } from '$lib/application/authStore';
-	import { page } from '$app/stores';
+	import axios from 'axios';
+	import { parse } from 'yaml';
 
 	let textareaRef: any;
 
 	let prompt: string = '';
-	let examples: { title: string; content: string }[] = $page.data.examples;
+	let examples: { title: string; content: string }[] = [];
 
 	const onSelectExample = (content: string) => {
 		prompt = content;
@@ -28,7 +29,11 @@
 		login();
 	};
 
-	onMount(() => {
+	onMount(async () => {
+		const resp = await axios.get('/exampleCodes.yaml');
+		const data = parse(resp.data);
+		examples = data.example_codes;
+		await tick();
 		// @ts-ignore
 		Prism.highlightAll();
 	});
