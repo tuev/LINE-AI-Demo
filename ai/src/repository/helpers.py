@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Generator, Generic, TypeVar
+from typing import TypeVar
 
 
 T = TypeVar("T")
@@ -14,11 +14,3 @@ def print_prompt(prompt: str):
     print(">>>")
     print(prompt)
     print("===")
-
-
-class GeneratorValue(Generic[T, S]):
-    def __init__(self, gen: Generator[T, Any, S]):
-        self.gen: Generator[T, Any, S] = gen
-
-    def __iter__(self):
-        self.value = yield from self.gen

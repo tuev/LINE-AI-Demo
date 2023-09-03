@@ -1,5 +1,5 @@
 <script>
-	import { Button, NavLi, NavUl } from 'flowbite-svelte';
+	import { Button } from 'flowbite-svelte';
 </script>
 
 <svelte:head>

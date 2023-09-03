@@ -1,10 +1,10 @@
 <script>
 	import '../app.postcss';
 	import Header from './Header.svelte';
-	import './styles.css';
+	import './styles.scss';
 </script>
 
-<div class="app">
+<div class="container mx-auto">
 	<Header />
 
 	<main>

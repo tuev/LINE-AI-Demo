@@ -7,22 +7,19 @@
 	<meta name="description" content="About this app" />
 </svelte:head>
 
-<div class="text-center text-column px-5 flex flex-col gap-5">
-	<Heading tag="h1" customSize="text-4xl">About this app</Heading>
+<div class="mx-auto text-column px-5 flex flex-col gap-5 max-w-xl">
+	<Heading tag="h1" customSize="text-4xl" class="text-center">About this app</Heading>
 
 	<P>
-		The Line AI demo is a project that utilizes publicly available Large Language Models on
-		<a href="https://chop.dev" target="_blank" class="text-primary-500">Quang Tran</a>'s hardware to
-		showcase the capabilities and quality of these models. It is designed to provide a practical and
-		interactive demonstration of how these advanced AI models can be used in real-world
-		applications.
+		<span class="font-bold">The Line AI demo app</span> is a project that leverages Large Language Models
+		on consumer hardware. Its main goal is to exhibit the quality of these models, providing a practical
+		tool for users to experience AI capabilities in real-time.
 	</P>
+
 	<P>
-		Moreover, the Line AI demo serves as the foundation for the
+		Furthermore, this demo is the starting point for the
 		<a href="#" class="text-primary-500">LINE VN AI Study Group</a>. This group aims to build a
-		final demonstration product using the insights and experience gained from the Line AI demo
-		project. It is a collaborative effort that brings together AI enthusiasts and experts to
-		explore, learn, and innovate in the field of AI. This project, therefore, plays a crucial role
-		in advancing AI knowledge and applications.
+		final demonstration product, using this project as a learning and development opportunity,
+		allowing them to explore the complexities of AI.
 	</P>
 </div>

@@ -1,36 +1,37 @@
 import json
-from typing import Any, Generator
+from typing import Any, Generator, Optional
 from pydantic import BaseModel
 
 import requests
 
 
 class LLMTimings(BaseModel):
-    predicted_ms: float = 0.0
-    predicted_n: int = 0
-    predicted_per_second: float = 0.0
-    predicted_per_token_ms: float = 0.0
-    prompt_ms: float = 0.0
-    prompt_n: int = 0
-    prompt_per_second: float = 0.0
-    prompt_per_token_ms: float = 0.0
+    predicted_ms: Optional[float]
+    predicted_n: Optional[int]
+    predicted_per_second: Optional[float]
+    predicted_per_token_ms: Optional[float]
+    prompt_ms: Optional[float]
+    prompt_n: Optional[int]
+    prompt_per_second: Optional[float]
+    prompt_per_token_ms: Optional[float]
 
 
 class LLMUsage(BaseModel):
-    timings: LLMTimings = LLMTimings()
-    tokens_evaluated: int = 0
-    tokens_predicted: int = 0
+    timings: LLMTimings
+    tokens_evaluated: Optional[int]
+    tokens_predicted: Optional[int]
 
 
 class LLMFinalContent(BaseModel):
-    final_content: str
-    usage: LLMUsage
     stop: bool
+    final_content: str
+    usage: Optional[LLMUsage]
+    err: Optional[str]
 
 
 class LLMStreamContent(BaseModel):
-    content: str
     stop: bool
+    content: str
 
 
 class LLMFacade:
@@ -69,28 +70,42 @@ class LLMFacade:
         s = requests.Session()
         data = self._make_prompt_request_body(prompt)
 
-        with s.post(f"{self.endpoint}/completion", data=data, stream=True) as resp:
+        with s.post(
+            f"{self.endpoint}/completion",
+            data=data,
+            stream=True,
+            timeout=60,  # TODO: Move timeout to env
+        ) as resp:
             content = ""
-            for line in resp.iter_lines():
-                if line:
-                    try:
-                        data_str = line.decode("utf-8").split("data: ")[1]
-                        value = json.loads(data_str)
-                        if value.get("stop", True) is True:
-                            value["timings"]["prompt_per_second"] = (
-                                value["timings"]["prompt_per_second"] or 0.0
-                            )
-                            value["final_content"] = content
-                            usage = LLMUsage.parse_obj(value)
-                            final_content = LLMFinalContent(
-                                final_content=content, usage=usage, stop=True
-                            )
-                            yield final_content
-                        else:
-                            llm_content = LLMStreamContent.parse_obj(value)
-                            content += llm_content.content
-                            yield llm_content
+            try:
+                for line in resp.iter_lines():
+                    if line:
+                        try:
+                            data_str = line.decode("utf-8").split("data: ")[1]
+                            value = json.loads(data_str)
+                            if value.get("stop", True) is True:
+                                value["final_content"] = content
+                                usage = LLMUsage.parse_obj(value)
+                                final_content = LLMFinalContent(
+                                    stop=True,
+                                    final_content=content,
+                                    usage=usage,
+                                    err=None,
+                                )
+                                yield final_content
+                            else:
+                                llm_content = LLMStreamContent.parse_obj(value)
+                                content += llm_content.content
+                                yield llm_content
 
-                    except Exception as e:
-                        print("LLM completion ERR processing stream", line)
-                        raise e
+                        except Exception as e:
+                            print("LLM completion ERR processing stream", line)
+                            raise e
+            except requests.exceptions.Timeout:
+                final_content = LLMFinalContent(
+                    stop=True,
+                    final_content=content,
+                    usage=None,
+                    err="timeout",
+                )
+                yield final_content
