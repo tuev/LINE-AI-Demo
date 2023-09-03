@@ -9,7 +9,7 @@ export class AIRepo {
 
 	async healthCheck() {
 		try {
-			await axios.get(`${this.apiEndpoint}/healthz`, { timeout: 3000 });
+			await axios.get(`${this.apiEndpoint}/healthz`, { timeout: 5000 });
 			return true;
 		} catch (e) {
 			console.error('healthCheck ERR', e);
