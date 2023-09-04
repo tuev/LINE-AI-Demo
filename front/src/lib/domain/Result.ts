@@ -1,3 +1,8 @@
+import * as TE from 'fp-ts/lib/TaskEither';
+import * as T from 'fp-ts/lib/Task';
+import type { Writable } from 'svelte/store';
+import { cloneDeep } from 'lodash';
+
 export enum DataState {
 	NotInited = 'NotInited',
 	Loading = 'Loading',
@@ -6,9 +11,15 @@ export enum DataState {
 }
 
 export class Result<T, Err> {
-	public value: T | null = null;
+	public value: T;
 	public err: Err | null = null;
 	public state: DataState = DataState.NotInited;
+	private initialValue: T;
+
+	constructor(value: T) {
+		this.value = value;
+		this.initialValue = cloneDeep(value);
+	}
 
 	get notInited() {
 		return this.state === DataState.NotInited;
@@ -29,7 +40,7 @@ export class Result<T, Err> {
 	reset() {
 		this.state = DataState.NotInited;
 		this.err = null;
-		this.value = null;
+		this.value = this.initialValue;
 		return this;
 	}
 
@@ -38,7 +49,7 @@ export class Result<T, Err> {
 		return this;
 	}
 
-	setValue(val: T | null) {
+	setValue(val: T) {
 		this.state = DataState.HasData;
 		this.value = val;
 		return this;
@@ -103,3 +114,24 @@ export class Result<T, Err> {
 		}
 	}
 }
+
+/**
+ * Fold the result with given Writable Result
+ * Set the data and change state based on Result or Error
+ *
+ * `foldWritable(storeVal)`
+ *
+ * is equipvalent to
+ *
+ * ```
+ * T.fold(
+ *   err => T.of(storeVal.update(v => v.setError(err)))
+ *   res => T.of(storeVal.update(v => v.setValue(res)))
+ * )
+ * ```
+ */
+export const foldTEResult = <T, Err>(w: Writable<Result<T, Err>>) =>
+	TE.fold<Err, T, void>(
+		(err) => T.of(w.update((v) => v.setError(err))),
+		(res) => T.of(w.update((v) => v.setValue(res)))
+	);

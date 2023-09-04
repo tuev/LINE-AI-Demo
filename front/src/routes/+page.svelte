@@ -1,5 +1,12 @@
 <script>
+	import { getUsage, last10Usage } from '$lib/application/usageStore';
 	import { Button, P } from 'flowbite-svelte';
+	import { onMount } from 'svelte';
+	import LastUsageList from './LastUsageList.svelte';
+
+	onMount(() => {
+		getUsage();
+	});
 </script>
 
 <svelte:head>
@@ -39,4 +46,12 @@
 		</P>
 	</div>
 	<Button href="/code_completion">Code Completion</Button>
+	{#if $last10Usage.hasData}
+		<div class="py-5 max-w-md">
+			<h1 class="text-lg font-bold my-3">Last 10 Usage</h1>
+			<div>
+				<LastUsageList usages={$last10Usage.value} />
+			</div>
+		</div>
+	{/if}
 </section>

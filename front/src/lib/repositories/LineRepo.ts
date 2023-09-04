@@ -1,10 +1,5 @@
+import type { LiffProfile } from '$lib/domain/LineProfile';
 import type { Liff } from '@liff/liff-types';
-
-export interface LiffProfile {
-	displayName: string;
-	pictureUrl: string;
-	userId: string;
-}
 
 export class LiffRepo {
 	constructor(private liff: Liff, private liffId: string) {}
@@ -32,7 +27,7 @@ export class LiffRepo {
 	getIDToken() {
 		const idToken = this.liff.getDecodedIDToken();
 		if (!idToken || idToken.exp! < new Date().getTime() / 1000) {
-            this.logout()
+			this.logout();
 			this.login();
 			return;
 		}

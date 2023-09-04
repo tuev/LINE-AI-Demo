@@ -7,7 +7,7 @@ import * as E from 'fp-ts/lib/Either';
 
 export const streamLoading = writable(false);
 export const streamContent = writable(
-	new Result<{ stream: string; final: LLMFinalContent | null }, string>()
+	new Result<{ stream: string; final: LLMFinalContent | null }, string>({ stream: '', final: null })
 );
 
 export const sendPrompt = async (query: string) => {
@@ -18,7 +18,7 @@ export const sendPrompt = async (query: string) => {
 		streamContent.update((v) => v.setError('must have access token'));
 		return;
 	} else {
-		streamContent.update((v) => v.setValue({ stream: '', final: null }));
+		streamContent.update((v) => v.reset());
 		await aiRepo.streamCompletion({ query }, token, (value) => {
 			pipe(
 				value,
@@ -40,10 +40,10 @@ export const sendPrompt = async (query: string) => {
 	streamLoading.set(false);
 };
 
-export const llmHealth = writable(new Result<boolean, string>());
+export const llmHealth = writable(new Result<boolean, string>(false));
 
 export const isLLMOnline = derived(llmHealth, (v) => {
-	return v.hasData && v.value === true;
+	return v.value === true;
 });
 
 export const checkLLmHealth = async () => {

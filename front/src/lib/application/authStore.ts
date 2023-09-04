@@ -1,9 +1,9 @@
 import { derived, writable } from 'svelte/store';
 import { liffRepo } from '$lib/repositories';
-import type { LiffProfile } from '$lib/repositories/LineRepo';
 import { Result } from '$lib/domain/Result';
+import type { LiffProfile } from '$lib/domain/LineProfile';
 
-export const liffProfile = writable(new Result<LiffProfile | null, string>());
+export const liffProfile = writable(new Result<LiffProfile | null, string>(null));
 
 export const isLoggedIn = derived(liffProfile, (v) => {
 	return v.hasData && v.value !== null;

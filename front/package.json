@@ -42,9 +42,12 @@
 	"type": "module",
 	"dependencies": {
 		"@line/liff": "^2.22.3",
+		"@types/lodash": "^4.14.197",
 		"@types/marked": "^5.0.1",
 		"axios": "^1.5.0",
+		"date-fns": "^2.30.0",
 		"fp-ts": "^2.16.1",
+		"lodash": "^4.17.21",
 		"marked": "^7.0.5",
 		"svelte-click-outside": "^1.0.0",
 		"yaml": "^2.3.2",
