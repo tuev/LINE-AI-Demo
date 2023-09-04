@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from router import auth_router, code_router
+from router import router_attach
 
 app = FastAPI()
 
@@ -15,8 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(code_router)
-app.include_router(auth_router)
+router_attach(app)
 
 
 @app.get("/healthz")

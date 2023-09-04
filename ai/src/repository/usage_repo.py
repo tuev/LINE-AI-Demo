@@ -1,4 +1,8 @@
+from datetime import datetime, timezone
+import json
+from typing import List
 from peewee import CharField, DateTimeField, TextField
+from pydantic import BaseModel
 
 from repository.auth_repo import LineUserInfo
 from repository.base_db import BaseDBModel, get_db
@@ -13,6 +17,12 @@ class Usage(BaseDBModel):
     result = TextField()
     usage = TextField(null=True)
     timestamp = DateTimeField()
+
+
+class UsageUserDetail(BaseModel):
+    name: str
+    picture: str
+    timestamp: datetime
 
 
 class UsageRepo:
@@ -34,6 +44,24 @@ class UsageRepo:
         )
         item.save()
         return item.get_id()
+
+    def last_usages(self, amount=10) -> List[UsageUserDetail]:
+        results: List[UsageUserDetail] = []
+        for result in (
+            Usage.select(Usage.userdetail, Usage.timestamp)
+            .order_by(Usage.timestamp.desc())
+            .limit(amount)
+        ):
+            userdetail = json.loads(result.userdetail)
+            results.append(
+                UsageUserDetail(
+                    name=userdetail.get("name"),
+                    picture=userdetail.get("picture"),
+                    timestamp=result.timestamp.replace(tzinfo=timezone.utc),
+                )
+            )
+
+        return results
 
 
 # Create table if not exists
