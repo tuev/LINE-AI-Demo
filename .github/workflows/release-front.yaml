@@ -6,9 +6,10 @@ on:
             - 'release/front-**'
 
 jobs:
-    deploy:
+    build_and_deploy:
         runs-on: ubuntu-latest
-        name: Deploy
+        name: Build and Deploy
+        environment: cloudflare
         steps:
             - uses: actions/checkout@v3
             - name: Use Node.js
