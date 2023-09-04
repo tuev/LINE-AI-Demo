@@ -44,3 +44,9 @@ docker compose up -d
 Built with sveltekit. And deployed to Cloudflare Page.
 
 More information inside the [front/README.md](/front/README.md)
+
+# License
+
+[MIT](https://opensource.org/licenses/MIT)
+
+Copyright (c) 2023-, Quang Tran.
