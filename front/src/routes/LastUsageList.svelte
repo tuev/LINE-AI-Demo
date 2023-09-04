@@ -27,7 +27,7 @@
 					<Avatar src={usage.picture} />
 				</TableBodyCell>
 				<TableBodyCell>{usage.name}</TableBodyCell>
-				<TableBodyCell>{format(usage.timestamp, "yyyy-mm-dd HH:mm:ss")}</TableBodyCell>
+				<TableBodyCell>{format(usage.timestamp, "yyyy-MM-dd HH:mm:ss")}</TableBodyCell>
 			</TableBodyRow>
 		{/each}
 	</TableBody>
