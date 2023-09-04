@@ -25,8 +25,8 @@
 		</P>
 		<P>
 			The cloud icon (<span class="text-lg material-icons">cloud_queue</span>) next to your avatar
-			indicates whether I have turned on the Backend server running the Backend or not. If it is
-			offline, please be patient. It means I am working on improving the Backend.
+			indicates whether I have turned on the Backend server running the LLM or not. If it is
+			offline, please be patient as I am working on improving the backend.
 		</P>
 		<P>
 			To manage the system's load, there is a rate limit applied, allowing
