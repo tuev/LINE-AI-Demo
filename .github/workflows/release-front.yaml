@@ -16,10 +16,16 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: 20.x
-            - run: npm ci
-            - run: npm run build
+
+            - name: Build the app
+              working-directory: ./front
+              run: |
+                npm ci
+                npm run build
+
             - name: Deploy
               uses: cloudflare/wrangler-action@v3
+              working-directory: ./front
               with:
                   apiToken: ${{ secrets.CF_API_TOKEN }}
                   accountId: ${{ secrets.CF_ACCOUNT_ID }}
