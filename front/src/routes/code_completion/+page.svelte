@@ -14,7 +14,7 @@
 
 	const onSelectExample = (content: string) => {
 		prompt = content;
-		textareaRef.scrollIntoView({ behavior: 'smooth' });
+		textareaRef.scrollIntoViewIfNeeded({ behavior: 'smooth' });
 		textareaRef.querySelector('textarea').focus();
 	};
 
