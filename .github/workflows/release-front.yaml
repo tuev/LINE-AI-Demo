@@ -10,9 +10,6 @@ jobs:
         runs-on: ubuntu-latest
         name: Build and Deploy
         environment: cloudflare
-        defaults:
-            run:
-                working-directory: front
         steps:
             - uses: actions/checkout@v3
             - name: Use Node.js
@@ -22,6 +19,7 @@ jobs:
 
             - name: Build the app
               run: |
+                  cd front
                   npm ci
                   npm run build
 
@@ -30,4 +28,4 @@ jobs:
               with:
                   apiToken: ${{ secrets.CF_API_TOKEN }}
                   accountId: ${{ secrets.CF_ACCOUNT_ID }}
-                  command: pages deploy --project-name=line-vn-ai-demo build
+                  command: pages deploy --project-name=line-vn-ai-demo front/build
