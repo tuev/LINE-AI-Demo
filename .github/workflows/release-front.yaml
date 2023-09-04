@@ -10,6 +10,9 @@ jobs:
         runs-on: ubuntu-latest
         name: Build and Deploy
         environment: cloudflare
+        defaults:
+            run:
+                working-directory: scripts
         steps:
             - uses: actions/checkout@v3
             - name: Use Node.js
@@ -18,14 +21,12 @@ jobs:
                   node-version: 20.x
 
             - name: Build the app
-              working-directory: ./front
               run: |
-                npm ci
-                npm run build
+                  npm ci
+                  npm run build
 
             - name: Deploy
               uses: cloudflare/wrangler-action@v3
-              working-directory: ./front
               with:
                   apiToken: ${{ secrets.CF_API_TOKEN }}
                   accountId: ${{ secrets.CF_ACCOUNT_ID }}
