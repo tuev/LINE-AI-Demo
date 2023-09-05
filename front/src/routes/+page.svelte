@@ -41,7 +41,7 @@
 		</P>
 		<P>Please note that this information should be used for reference purposes only.</P>
 		<P>
-			The open source code is available at
+			The source code is available at
 			<a href="https://github.com/trchopan/LINE-AI-Demo" class="font-bold text-green-500">Github</a>
 		</P>
 	</div>
