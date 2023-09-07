@@ -1,11 +1,21 @@
+from datetime import datetime, timezone
 from typing import Annotated, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from peewee import CharField, DateTimeField, IntegerField
 
 import requests
 from pydantic import BaseModel
 
+from repository.base_db import BaseDBModel, get_db
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+class LineUserInternalToken(BaseDBModel):
+    user_id = CharField(unique=True)
+    token = CharField()
+    timestamp = DateTimeField()
 
 
 class LineUserInfo(BaseModel):
@@ -78,3 +88,36 @@ class AuthRepo:
             raise credentials_exception
 
         return user
+
+    def set_internal_token(self, user_id: str, token: str):
+        token_splits = token.split("|")
+        if len(token_splits) != 3:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="wrong token form"
+            )
+        timestamp = datetime.fromtimestamp(float(token_splits[1]))
+        (
+            LineUserInternalToken.insert(
+                user_id=user_id, token=token, timestamp=timestamp
+            )
+            .on_conflict(
+                conflict_target=[LineUserInternalToken.user_id],
+                update={
+                    LineUserInternalToken.token: token,
+                    LineUserInternalToken.timestamp: timestamp,
+                },
+            )
+            .execute()
+        )
+
+    def get_token_timestamp(self, user_id):
+        item = LineUserInternalToken.get(user_id=user_id)
+        return item.timestamp.replace(tzinfo=timezone.utc)
+
+    def get_token(self, user_id):
+        item = LineUserInternalToken.get(user_id=user_id)
+        return item.token
+
+
+# Create table if not exists
+get_db().create_tables([LineUserInternalToken])

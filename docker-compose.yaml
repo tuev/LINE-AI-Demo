@@ -9,7 +9,7 @@ services:
             - LIFF_CLIENT_ID=2000615876
             - LLM_ENDPOINT=http://host.docker.internal:8080
         ports:
-            - '8081:8080'
+            - 8081:8080
         command: "sh -c 'sleep infinity'"
 
     database:

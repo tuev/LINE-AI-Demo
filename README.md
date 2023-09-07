@@ -39,6 +39,14 @@ If already built. Just need:
 docker compose up -d
 ```
 
+## Vector database
+
+### Create Vector plugin
+
+```SQL
+CREATE EXTENSION vector;
+```
+
 ## Frontend
 
 Built with sveltekit. And deployed to Cloudflare Page.
