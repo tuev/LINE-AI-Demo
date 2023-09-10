@@ -7,7 +7,6 @@ from sse_starlette.sse import EventSourceResponse
 from repository import usage_repo
 
 from repository.auth_repo import LineUserInfo
-from repository.code_repo import ChatModelEnum
 from repository.llm_facade import LLMFinalContent
 
 
@@ -55,12 +54,3 @@ async def completion_stream(
                 )
 
     return EventSourceResponse(event_generator())
-
-
-@code_router.post("/internal_chat")
-async def internal_chat(
-    user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
-):
-    internal_token = auth_repo.get_token(user.sub)
-    code_repo.internal_chat(ChatModelEnum.Chat_3_5, internal_token)
-    return None

@@ -55,7 +55,7 @@ class LLMFacade:
         self.endpoint = endpoint
 
     @staticmethod
-    def _make_prompt_request_body(prompt: str):
+    def _make_prompt_request_body_local_llm(prompt: str):
         # TODO: Move these configuration to env
         return json.dumps(
             {
@@ -117,10 +117,10 @@ class LLMFacade:
             )
             yield final_content
 
-    def completion(
+    def completion_local_llm(
         self, prompt: str
     ) -> Generator[LLMFinalContent | LLMStreamContent, Any, None]:
-        data = self._make_prompt_request_body(prompt)
+        data = self._make_prompt_request_body_local_llm(prompt)
         resp = requests.post(
             f"{self.endpoint}/completion",
             data=data,
@@ -150,8 +150,6 @@ class LLMFacade:
         messages: List[BaseMessage],
         model: ChatModelEnum,
         cookie: str,
-        max_length: int,
-        token_limit: int,
         stream: bool,
     ):
         url = "https://chatgpt.linecorp.com/api/chat"
@@ -170,13 +168,11 @@ class LLMFacade:
             "model": {
                 "id": model,
                 "name": model.get_name(),
-                "maxLength": max_length,
-                "tokenLimit": token_limit,
             },
             "messages": _messages,
             "key": "",
             "prompt": _system_prompt,
-            "temperature": 0.5,
+            "temperature": 0.1,
         }
 
         headers = {"Cookie": f"_inhouse_chatgpt={cookie}"}
@@ -194,17 +190,13 @@ class LLMFacade:
         self,
         messages: List[BaseMessage],
         model: ChatModelEnum,
-        cookie: str,
-        max_length: int = 12000,
-        token_limit: int = 4000,
+        internal_token: str,
     ):
         resp = self._make_line_internal_chat_request(
             messages,
             model,
-            cookie,
-            max_length,
-            token_limit,
-            stream=True,
+            internal_token,
+            stream=False,
         )
         return resp.text
 
@@ -213,15 +205,11 @@ class LLMFacade:
         messages: List[BaseMessage],
         model: ChatModelEnum,
         cookie: str,
-        max_length: int = 12000,
-        token_limit: int = 4000,
     ) -> Generator[LLMFinalContent | LLMStreamContent, Any, None]:
         resp = self._make_line_internal_chat_request(
             messages,
             model,
             cookie,
-            max_length,
-            token_limit,
             stream=True,
         )
         try:
@@ -233,13 +221,13 @@ class LLMFacade:
                 detail="error from internal chat",
             )
 
-    def healthcheck_embedding(self):
+    def healthcheck_line_embedding(self) -> bool:
         resp = requests.get(
             "http://jp.deeppocket.linecorp.com/contents-ml/embtxt-mling-xlm-xl-pca/monitor/l7check"
         )
         return resp.status_code == status.HTTP_200_OK
 
-    def embeddings(self, text: str) -> List[float]:
+    def line_embeddings(self, text: str) -> List[float]:
         res = requests.post(
             "http://jp.deeppocket.linecorp.com/contents-ml/embtxt-mling-xlm-xl-pca/get_emb",
             json={"text": text, "normalize": True, "startidx": 0},

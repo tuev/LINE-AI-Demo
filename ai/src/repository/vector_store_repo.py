@@ -1,79 +1,39 @@
 import json
-from typing import Callable
+from typing import Optional
 from uuid import uuid4
 
-from peewee import PostgresqlDatabase
-from pgvector.psycopg2 import register_vector
+from pydantic import BaseModel
 
 from repository.helpers import make_chunks
+from repository.db_connect_base import DbConnectBase
 
 
-class VectorQueryResult:
-    def __init__(self, namespace: str, document: str, metadata: str, similarity: float):
-        self.namespace = namespace
-        self.document = document
-        self.metadata = metadata
-        self.similarity = similarity
-
-    def to_dict(self):
-        return {
-            "namespace": self.namespace,
-            "document": self.document,
-            "metadata": self.metadata,
-            "similarity": self.similarity,
-        }
+class VectorQueryResult(BaseModel):
+    namespace: str
+    document: str
+    metadata: dict
+    similarity: float
 
 
-class VectorStoreRepo:
+class Vector(BaseModel):
+    namespace: str
+    document: str
+    vector_id: str
+    metadata: dict
+
+
+class VectorStoreRepo(DbConnectBase):
     def __init__(
         self,
-        get_db: Callable[[], PostgresqlDatabase],
         table_name: str,
         vector_size: int,
     ):
         self._TABLE_NAME = table_name
         self._VECTOR_SIZE = vector_size
-        self.get_db = get_db
-        self._conn = get_db()
-        self.register_vector_plugin()
-        self.create_table()
+        self._create_table()
 
-    _conn = None
-
-    def register_vector_plugin(self):
-        register_vector(self.get_db())
-
-    def execute(self, sql, args=None):
-        """Below is a wrapper for the normal psycopg2 execute
-        to fix the issue when psycopg2 unable to handle connection
-        disconnected by the server by timeout or other unknown causes:
-        - First check the current connection success.
-        - If not close it and open new connection.
-        - Then proceed to execute the query.
-        """
-        try:
-            if self._conn is None:
-                raise Exception("Not yet have connection.")
-
-            with self._conn.cursor() as cursor:
-                # Atempt to connect
-                cursor.execute("SELECT 1 + 1;")
-
-        except Exception as e:
-            if self._conn is not None:
-                self._conn.close()
-
-            self._conn = self.get_db()
-            print("Reconnected db", e)
-            pass
-
-        with self._conn.cursor() as cursor:
-            cursor.execute(sql, args)
-            if cursor is not None and cursor.pgresult_ptr is not None:
-                return cursor.fetchall()
-
-    def create_table(self):
-        self.execute(
+    def _create_table(self):
+        self._execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self._TABLE_NAME} (
                 namespace VARCHAR(255),
@@ -85,34 +45,27 @@ class VectorStoreRepo:
             )""",
         )
 
-    def drop_table(self):
-        self.execute(
+    def _drop_table(self):
+        self._execute(
             f"""
             DROP TABLE {self._TABLE_NAME}
             """
         )
 
-    def delete_vectors_in_document(
-        self, namespace: str, document: str = "", permanent: bool = False
-    ):
-        # TODO: this not yet handle too many DELETE
+    def delete_vectors_in_document(self, namespace: str, document: str = ""):
+        # TODO: this does not yet handle multiple consecutive DELETEs
 
-        if permanent:
-            query_str = f"DELETE FROM {self._TABLE_NAME}"
-        else:
-            query_str = f"UPDATE {self._TABLE_NAME} SET status = 'inactive'"
-
-        query_str += " WHERE namespace = %s"
+        query_str = f"DELETE FROM {self._TABLE_NAME} WHERE namespace = %s"
 
         query_args = (namespace,)
         if document != "":
             query_str += " AND document = %s"
             query_args += (document,)
 
-        self.execute(query_str, query_args)
+        self._execute(query_str, query_args)
 
     def set_vector_status_by_ids(self, vector_ids: list[str], status: str):
-        # TODO: this not yet handle too many UPDATE
+        # TODO: this does not yet handle multiple consecutive UPDATEs
         query_str = ""
         query_args = ()
         for vector_id in vector_ids:
@@ -123,7 +76,7 @@ class VectorStoreRepo:
                 """
             query_args += (vector_id,)
 
-        self.execute(query_str, query_args)
+        self._execute(query_str, query_args)
 
     def insert_vectors(
         self,
@@ -131,9 +84,13 @@ class VectorStoreRepo:
         document: str,
         vectors: list[list[float]],
         metadatas: list[dict],
+        vector_ids: Optional[list[str]] = None,
     ):
         if len(vectors) != len(metadatas):
             raise Exception("len(vectors) must match len(metadata)")
+
+        if vector_ids is not None and len(vector_ids) != len(vectors):
+            raise Exception("len(vector_ids) must match len(vectors)")
 
         _metadatas: list[str] = []
         for m in metadatas:
@@ -143,17 +100,17 @@ class VectorStoreRepo:
 
             _metadatas.append(metadata_str)
 
-        vector_ids: list[str] = []
-        vectors_and_metadata = list(zip(vectors, _metadatas))
+        _vector_ids: list[str] = (
+            vector_ids if vector_ids is not None else [str(uuid4()) for _ in vectors]
+        )
+        vectors_and_metadata = list(zip(_vector_ids, vectors, _metadatas))
         vectors_and_metadata_len = len(vectors_and_metadata)
         inserted = 0
         _CHUNK_SIZE = 20
         for chunk in make_chunks(vectors_and_metadata, _CHUNK_SIZE):
             query_str = ""
             query_args = ()
-            for vector, metadata in chunk:
-                vector_id = str(uuid4())
-                vector_ids.append(vector_id)
+            for vector_id, vector, metadata in chunk:
                 query_str += f"""
                     INSERT INTO {self._TABLE_NAME}
                         (namespace, document, vector_id, vector, metadata, status)
@@ -167,17 +124,22 @@ class VectorStoreRepo:
                     metadata,
                 )
 
-            self.execute(query_str, query_args)
+            self._execute(query_str, query_args)
 
             inserted += len(chunk)
             print(f">>> inserted {inserted} / {vectors_and_metadata_len}")
 
-        return vector_ids
+        return _vector_ids
 
     def get_document_vectors(self, namespace: str, document: str = ""):
         query_str = f"""
-        SELECT vector_id FROM {self._TABLE_NAME}
-        WHERE NOT status = 'inactive' AND namespace = %s
+        SELECT
+            namespace,
+            document,
+            vector_id,
+            metadata
+        FROM {self._TABLE_NAME}
+        WHERE namespace = %s
         """
         query_args = (namespace,)
 
@@ -185,10 +147,18 @@ class VectorStoreRepo:
             query_str += " AND document = %s"
             query_args += (document,)
 
-        results = self.execute(query_str, query_args) or []
-        return [vector_id for (vector_id,) in results]
+        results = self._execute(query_str, query_args) or []
+        return [
+            Vector(
+                namespace=namespace,
+                document=document,
+                vector_id=vector_id,
+                metadata=json.loads(metadata),
+            )
+            for (namespace, document, vector_id, metadata) in results
+        ]
 
-    def similarity_search(
+    def similarity_search_by_namespace(
         self,
         query_vector: list[float],
         namespace: str,
@@ -217,9 +187,49 @@ class VectorStoreRepo:
         query_str += " ORDER BY similarity DESC LIMIT %s"
         query_args += (limit,)
 
-        results = self.execute(query_str, query_args) or []
+        results = self._execute(query_str, query_args) or []
 
         return [
-            VectorQueryResult(namespace, document, metadata, similarity)
+            VectorQueryResult(
+                namespace=namespace,
+                document=document,
+                metadata=json.loads(metadata),
+                similarity=similarity,
+            )
+            for (namespace, document, _, metadata, similarity) in results
+        ]
+
+    def similarity_search_by_documents(
+        self,
+        query_vector: list[float],
+        documents: list[str],
+        limit: int = 5,
+    ):
+        # cosine distant. Ref: https://github.com/pgvector/pgvector
+        _distant_search_method = "<=>"
+
+        query_str = f"""
+        SELECT 
+            namespace,
+            document,
+            vector_id,
+            metadata,
+            1 - (vector {_distant_search_method} %s::vector) AS similarity
+        FROM {self._TABLE_NAME}
+        WHERE NOT status = 'inactive' AND document = ANY(%s)
+        ORDER BY similarity DESC LIMIT %s
+        """
+
+        query_args = (query_vector, documents, limit)
+
+        results = self._execute(query_str, query_args) or []
+
+        return [
+            VectorQueryResult(
+                namespace=namespace,
+                document=document,
+                metadata=json.loads(metadata),
+                similarity=similarity,
+            )
             for (namespace, document, _, metadata, similarity) in results
         ]

@@ -3,6 +3,6 @@
 secret.yaml
 .env
 
-/static
-db-data
+/blob-data
+/db-data
 /tmp

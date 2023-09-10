@@ -1,21 +1,45 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 from typing import Annotated, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from peewee import CharField, DateTimeField, IntegerField
+from peewee import CharField, DateTimeField, DoesNotExist
 
 import requests
 from pydantic import BaseModel
 
-from repository.base_db import BaseDBModel, get_db
+from repository.base_db import BaseDBModel, from_datetime, from_str, get_db
+from repository.helpers import get_timestamp
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-class LineUserInternalToken(BaseDBModel):
+class LineUserInternalTokenDB(BaseDBModel):
     user_id = CharField(unique=True)
     token = CharField()
     timestamp = DateTimeField()
+
+
+class LineUserInternalToken(BaseModel):
+    user_id: str
+    token: str
+    timestamp: datetime
+
+    @staticmethod
+    def from_db(v: LineUserInternalTokenDB):
+        return LineUserInternalToken(
+            user_id=from_str(v.user_id),
+            token=from_str(v.token),
+            timestamp=from_datetime(v.timestamp),
+        )
+
+    def is_expired(
+        self,
+        expire_duration: timedelta = timedelta(days=1),
+        allow_diff_delta: timedelta = timedelta(minutes=30),
+    ) -> bool:
+        time_now = get_timestamp()
+        expired_ts = self.timestamp + expire_duration
+        return expired_ts - time_now < allow_diff_delta
 
 
 class LineUserInfo(BaseModel):
@@ -97,27 +121,26 @@ class AuthRepo:
             )
         timestamp = datetime.fromtimestamp(float(token_splits[1]))
         (
-            LineUserInternalToken.insert(
+            LineUserInternalTokenDB.insert(
                 user_id=user_id, token=token, timestamp=timestamp
             )
             .on_conflict(
-                conflict_target=[LineUserInternalToken.user_id],
+                conflict_target=[LineUserInternalTokenDB.user_id],
                 update={
-                    LineUserInternalToken.token: token,
-                    LineUserInternalToken.timestamp: timestamp,
+                    LineUserInternalTokenDB.token: token,
+                    LineUserInternalTokenDB.timestamp: timestamp,
                 },
             )
             .execute()
         )
 
-    def get_token_timestamp(self, user_id):
-        item = LineUserInternalToken.get(user_id=user_id)
-        return item.timestamp.replace(tzinfo=timezone.utc)
-
-    def get_token(self, user_id):
-        item = LineUserInternalToken.get(user_id=user_id)
-        return item.token
+    def get_token(self, user_id: str) -> LineUserInternalToken | None:
+        try:
+            item = LineUserInternalTokenDB.get(user_id=user_id)
+            return LineUserInternalToken.from_db(item)
+        except DoesNotExist:
+            return None
 
 
 # Create table if not exists
-get_db().create_tables([LineUserInternalToken])
+get_db().create_tables([LineUserInternalTokenDB])

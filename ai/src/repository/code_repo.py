@@ -1,4 +1,3 @@
-import json
 from langchain.prompts import (
     ChatPromptTemplate,
     HumanMessagePromptTemplate,
@@ -7,31 +6,29 @@ from langchain.prompts import (
 )
 import yaml
 
-from repository.base_repo import BaseRepo
 from repository.helpers import print_prompt
 from repository.llm_facade import ChatModelEnum, LLMFacade
+from systems.base_ai_ystem import BaseAISystem
 
 
-class CodeRepo(BaseRepo):
+class CodeRepo:
     def __init__(self, llm: LLMFacade):
         self.llm = llm
 
         with open("/app/src/prompts/code.yaml") as f:
             config = yaml.safe_load(f)
 
-        self._completion_prompt = self.load_messages(config, "Completion")
+        self._completion_prompt = BaseAISystem.load_messages(config, "Completion")
 
     def completion(self, query: str):
         prompt = self._completion_prompt.format(input=query)
         print_prompt(prompt)
-        return self.llm.completion(prompt)
+        return self.llm.completion_local_llm(prompt)
 
     def internal_chat(
         self,
         model: ChatModelEnum,
         internal_token: str,
-        max_length: int = 12000,
-        token_limit: int = 4000,
     ):
         messages = ChatPromptTemplate.from_messages(
             [
@@ -93,7 +90,5 @@ In this script, we use the `open` function to open the file in read mode (`'r'`)
                 messages.format_prompt().to_messages(),
                 model,
                 internal_token,
-                max_length,
-                token_limit,
             )
         )

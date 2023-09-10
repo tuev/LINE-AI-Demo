@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from repository import auth_repo
 from repository.auth_repo import LineUserInfo
@@ -43,4 +43,8 @@ async def set_internal_token(
 async def internal_token_timestamp(
     user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
 ):
-    return auth_repo.get_token_timestamp(user_id=user.sub)
+    token = auth_repo.get_token(user_id=user.sub)
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="notfound")
+
+    return token.timestamp

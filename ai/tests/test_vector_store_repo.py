@@ -1,8 +1,6 @@
 import pytest
-import json
 from typing import List
 from repository import llm_facade
-from repository.base_db import get_db
 from repository.vector_store_repo import VectorStoreRepo
 
 
@@ -25,7 +23,7 @@ def insert_sample_vectors(vector_store: VectorStoreRepo):
     vector_embeddings: List[List[float]] = []
     vector_metadatas: List[dict] = []
     for text in texts:
-        vector_embeddings.append(llm_facade.embeddings(text))
+        vector_embeddings.append(llm_facade.line_embeddings(text))
         vector_metadatas.append({"text": text})
 
     vector_store.insert_vectors(
@@ -38,10 +36,10 @@ def insert_sample_vectors(vector_store: VectorStoreRepo):
 
 @pytest.fixture
 def initialize_vector_store():
-    vector_store = VectorStoreRepo(get_db, "vector_store_test", 768)
+    vector_store = VectorStoreRepo("vector_store_test", 768)
     insert_sample_vectors(vector_store)
     yield vector_store
-    vector_store.drop_table()
+    vector_store._drop_table()
 
 
 def test_vector_store(initialize_vector_store):
@@ -50,10 +48,12 @@ def test_vector_store(initialize_vector_store):
     if isinstance(vector_store, VectorStoreRepo) is False:
         raise Exception("failed initialize_vector_store")
 
-    search_vector = llm_facade.embeddings(
+    search_vector = llm_facade.line_embeddings(
         "Athens is a beautiful city. I have been studying Math there for one year and I find it to be very challenging."  # noqa: E501
     )
-    results = vector_store.similarity_search(search_vector, test_store_namespace)
+    results = vector_store.similarity_search_by_namespace(
+        search_vector, test_store_namespace
+    )
 
     for result in results:
         print(result.metadata)
@@ -71,4 +71,4 @@ def test_vector_store(initialize_vector_store):
         if i < len(results) - 2:
             assert result.similarity > results[i + 1].similarity
 
-        assert json.loads(result.metadata)["text"] == expect_texts_order[i]
+        assert result.metadata["text"] == expect_texts_order[i]
