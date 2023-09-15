@@ -24,7 +24,7 @@ Recommend link: [https://huggingface.co/TheBloke/CodeLlama-13B-Instruct-GGUF](ht
 
 ```bash
 cd llama.cpp
-./server -m ~/Sync/learn-ai/models/codellama-13b-instruct.Q5_K_M.gguf -ngl 32
+./server -m <path_to_model>/codellama-13b-instruct.Q5_K_M.gguf -ngl 32
 ```
 
 ## Build and run with docker compose
