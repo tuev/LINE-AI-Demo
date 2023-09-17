@@ -30,7 +30,7 @@ services:
             POSTGRES_DB: line-ai-demo
 
     unstructured:
-        image: quay.io/unstructured-io/unstructured-api:0.0.40
+        image: quay.io/unstructured-io/unstructured-api:0.0.43
         ports:
             - '8000:8000'
 
