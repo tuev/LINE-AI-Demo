@@ -14,17 +14,20 @@ class DocumentParseResult(BaseModel):
 class DocumentParser:
     def __init__(self, unstructured_endpoint: str, support_types: str):
         self._unstructured_endpoint = unstructured_endpoint
-        self._support_types = support_types
+        self._support_types = support_types.split(",")
         pass
 
-    def check_support_content_type(self, content_type):
+    def check_support_content_type(self, content_type: str):
         return content_type in self._support_types
 
-    def call_unstructured_api(self, document_id, file_bytes, content_type) -> List[Any]:
+    def call_unstructured_api(
+        self, document_id: str, file_bytes: bytes, content_type: str
+    ) -> List[Any]:
+        _content_type = content_type.split(";")[0]
         url = self._unstructured_endpoint + "/general/v0/general"
         r = requests.post(
             url,
-            files={"files": (document_id, file_bytes, content_type)},
+            files={"files": (document_id, file_bytes, _content_type)},
         )
         try:
             return r.json()
@@ -33,16 +36,11 @@ class DocumentParser:
             print(r.text)
             raise e
 
-    def simple_parse(self, document_id: str, file_bytes: bytes, content_type: str):
-        _content_type = content_type.split(";")[0]
-        unstructured_docs = self.call_unstructured_api(
-            document_id, file_bytes, _content_type
-        )
-
+    def simple_parse(self, unstructured_docs: List[Any]) -> List[DocumentParseResult]:
         docs: List[DocumentParseResult] = []
         for d in unstructured_docs:
             content = d.get("text", "")
-            
+
             # Filter base64 encoding texts
             if " " not in content:
                 continue

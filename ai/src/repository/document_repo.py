@@ -3,13 +3,14 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, BinaryIO, List
 from uuid import uuid4
+from fastapi import HTTPException, status
 from langchain.prompts import (
     ChatPromptTemplate,
     HumanMessagePromptTemplate,
     SystemMessagePromptTemplate,
 )
 
-from peewee import CharField, DateTimeField, DoesNotExist, IntegerField, TextField
+from peewee import CharField, DateTimeField, IntegerField, TextField
 from pydantic import BaseModel
 import numpy as np
 import yaml
@@ -153,12 +154,14 @@ class DocumentRepo(DbConnectBase):
         self._summary_prompt = BaseAISystem.load_messages_chat(config, "Summary")
         self._summary_all_prompt = BaseAISystem.load_messages_chat(config, "SummaryAll")
 
-    def get(self, id: str) -> Document | None:
-        try:
-            item = DocumentDB.get(DocumentDB.doc_id == id)
-            return Document.from_db(item)
-        except DoesNotExist:
-            return None
+    def get_doc_or_not_found(self, id: str) -> Document:
+        item = DocumentDB.get_or_none(DocumentDB.doc_id == id)
+        if item is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="not found document"
+            )
+
+        return item
 
     def create(
         self,
@@ -192,10 +195,15 @@ class DocumentRepo(DbConnectBase):
         item.to_db().save()
         return doc_id
 
-    def get_object(self, doc_id: str):
-        data = self._storage_facade.get(doc_id)
-        item = self.get(id=doc_id)
-        return item, data
+    def get_file_or_not_found(self, doc_id: str):
+        blob = self._storage_facade.get(doc_id)
+        if blob is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="not found document file",
+            )
+
+        return blob
 
     def _get_document_embbedings(self, doc_results: List[str]) -> List[List[float]]:
         doc_embeddings: List[List[float]] = []
@@ -246,13 +254,8 @@ class DocumentRepo(DbConnectBase):
         return summary_all
 
     def process_vector_and_summary(self, internal_token: str, doc_id: str):
-        item, data = self.get_object(doc_id)
-
-        if item is None:
-            raise Exception("Error process_vectors. Cannot get document detail.")
-
-        if data is None:
-            raise Exception("Error process_vectors. Cannot get document file.")
+        data = self.get_file_or_not_found(doc_id)
+        item = self.get_doc_or_not_found(id=doc_id)
 
         process_status: DocumentProcessStatusEnum = DocumentProcessStatusEnum.Processed
 
@@ -266,9 +269,10 @@ class DocumentRepo(DbConnectBase):
         embeddings: List[float] = []
 
         try:
-            doc_results = self._document_parser.simple_parse(
+            unstructured_docs = self._document_parser.call_unstructured_api(
                 document_id=item.doc_id, file_bytes=data, content_type=item.content_type
             )
+            doc_results = self._document_parser.simple_parse(unstructured_docs)
 
             # TODO: Improve the combination of document because information may be
             # in the 300 length docs
@@ -332,27 +336,26 @@ class DocumentRepo(DbConnectBase):
             }
         ).execute()
 
-    def list_document_by_user(self, user_id: str):
-        items = DocumentDB.select().where(DocumentDB.upload_by == user_id)
+    def list_document_by_user(self, user_id: str, skip: int, limit: int):
+        items = (
+            DocumentDB.select()
+            .where(DocumentDB.upload_by == user_id)
+            .order_by(DocumentDB.upload_at)
+            .paginate(skip, limit)
+        )
         return [Document.from_db(i) for i in items]
 
-    def list_document_public(self):
-        items = DocumentDB.select().where(
-            DocumentDB.visibility == DocumentVisibilityEnum.Public.value
+    def list_document_public(self, skip: int, limit: int):
+        items = (
+            DocumentDB.select()
+            .where(DocumentDB.visibility == DocumentVisibilityEnum.Public.value)
+            .order_by(DocumentDB.upload_at)
+            .paginate(skip, limit)
         )
         return [Document.from_db(i) for i in items]
 
     def get_document_vectors(self, doc_id: str):
-        item, data = self.get_object(doc_id)
-
-        if item is None:
-            raise Exception(
-                "Internal Error process_vectors. Cannot get document detail."
-            )
-
-        if data is None:
-            raise Exception("Internal Error process_vectors. Cannot get document file.")
-
+        item = self.get_doc_or_not_found(doc_id)
         vectors = self._vector_store_repo.get_document_vectors(
             item.namespace, item.doc_id
         )
@@ -386,6 +389,8 @@ class DocumentRepo(DbConnectBase):
         if user_id is not None:
             query_str += " AND upload_by = %s"
             query_args += (user_id,)
+        else:
+            query_str += " AND visibility = 'public'"
 
         query_str += " ORDER BY similarity DESC LIMIT %s"
         query_args += (limit,)
@@ -420,6 +425,12 @@ class DocumentRepo(DbConnectBase):
                 similarity,
             ) in results
         ]
+
+    def check_support_content_type(self, content_type: str):
+        return self._document_parser.check_support_content_type(content_type)
+
+    def get_support_content_type(self):
+        return self._document_parser._support_types
 
 
 # Create table if not exists

@@ -42,6 +42,22 @@ class LineUserInternalToken(BaseModel):
         return expired_ts - time_now < allow_diff_delta
 
 
+def check_token_expired(token: LineUserInternalToken | None) -> LineUserInternalToken:
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="internal token not found",
+        )
+
+    if token.is_expired():
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="unable to proceed because the internal token is about to expire.",
+        )
+
+    return token
+
+
 class LineUserInfo(BaseModel):
     iss: str
     sub: str

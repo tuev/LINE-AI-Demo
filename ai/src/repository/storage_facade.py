@@ -37,7 +37,7 @@ class StorageFacade:
             data = response.read()
             return data
 
-        except Exception as e:
+        except Exception:
             return None
 
         finally:

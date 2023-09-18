@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 
 from repository import document_repo, auth_repo
-from repository.auth_repo import LineUserInfo
+from repository.auth_repo import LineUserInfo, check_token_expired
 from repository.document_repo import DocumentVisibilityEnum
 
 document_router = APIRouter(prefix="/document")
@@ -62,6 +62,12 @@ def upload(
 
     if content_type is None:
         raise missing_file_detail("content_type")
+
+    if document_repo.check_support_content_type(content_type) is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported content_type. Support: {document_repo.get_support_content_type()}",
+        )
 
     if bytesize is None:
         raise missing_file_detail("bytesize")
@@ -110,9 +116,8 @@ def remove_temp_file(path: str):
 
 @document_router.get("/get_object/{document_id}")
 def get_object(document_id: str, background_task: BackgroundTasks):
-    doc, blob = document_repo.get_object(doc_id=document_id)
-    if doc is None or blob is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="notfound")
+    doc = document_repo.get_doc_or_not_found(document_id)
+    blob = document_repo.get_file_or_not_found(document_id)
 
     temp_file = tempfile.NamedTemporaryFile(delete=False)
 
@@ -136,18 +141,7 @@ def do_process(
     document_id: str,
 ):
     internal_token = auth_repo.get_token(user.sub)
-
-    if internal_token is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="internal token not found",
-        )
-
-    if internal_token.is_expired():
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="unable to proceed because the internal token is about to expire.",
-        )
+    internal_token = check_token_expired(internal_token)
 
     document_repo.process_vector_and_summary(internal_token.token, document_id)
     return "success"
@@ -158,11 +152,7 @@ def delete(
     user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
     document_id: str,
 ):
-    doc = document_repo.get(document_id)
-    if doc is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="not found document"
-        )
+    doc = document_repo.get_doc_or_not_found(document_id)
 
     if doc.upload_by != user.sub:
         raise HTTPException(
@@ -180,23 +170,13 @@ def vectors(document_id: str):
     return vectors
 
 
-@document_router.get("/list_my")
-def list_my(user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)]):
-    docs = document_repo.list_document_by_user(user.sub)
-    return docs
-
-
 @document_router.put("/set_visibility/{document_id}/{visibility}")
 def set_visibility(
     user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
     document_id: str,
     visibility: DocumentVisibilityEnum,
 ):
-    doc = document_repo.get(document_id)
-    if doc is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="not found document"
-        )
+    doc = document_repo.get_doc_or_not_found(document_id)
 
     if doc.upload_by != user.sub:
         raise HTTPException(
@@ -209,9 +189,19 @@ def set_visibility(
     return "success"
 
 
-@document_router.get("/list_public")
-def list_public():
-    docs = document_repo.list_document_public()
+@document_router.get("/list_my/")
+def list_my(
+    user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
+    skip: int = 0,
+    limit: int = 10,
+):
+    docs = document_repo.list_document_by_user(user.sub, skip, limit)
+    return docs
+
+
+@document_router.get("/list_public/")
+def list_public(skip: int = 0, limit: int = 10):
+    docs = document_repo.list_document_public(skip, limit)
     return docs
 
 
@@ -235,7 +225,7 @@ def query_my_document_summary(
     return results
 
 
-class queryPublicDocumentSummary(BaseModel):
+class QueryPublicDocumentSummary(BaseModel):
     namespace: str
     query: str
     limit: int = 5
@@ -243,7 +233,7 @@ class queryPublicDocumentSummary(BaseModel):
 
 @document_router.post("/query_public_document_summary")
 def query_public_document_summary(
-    body: queryPublicDocumentSummary,
+    body: QueryPublicDocumentSummary,
 ):
     results = document_repo.query_document_summary(
         namespace=body.namespace,
