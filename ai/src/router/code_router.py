@@ -13,6 +13,9 @@ from repository.llm_facade import LLMFinalContent
 code_router = APIRouter(prefix="/code")
 
 
+RATE_LIMIT_SECONDS = 30
+
+
 class CompletionStream(BaseModel):
     query: str
 
@@ -27,8 +30,6 @@ async def completion_stream(
     if user_request_record is not None:
         time_elapsed = datetime.datetime.now() - user_request_record.timestamp
         print(time_elapsed)
-
-        RATE_LIMIT_SECONDS = 30
 
         if time_elapsed < datetime.timedelta(seconds=RATE_LIMIT_SECONDS):
             raise HTTPException(

@@ -1,8 +1,6 @@
 Planning:
     prompt: |
-        I want you to act as a advisor on how to solve a problem. I will give you some specific information
-        and it is your job to devise a plan on how how to get the information needed and how to combine them
-        to solve the problem.
+        I want you to act as a advisor on how to solve a problem. I will give you some specific information and it is your job to devise a plan on how how to get the information needed and how to combine them to solve the problem.
 
         The plan should have amount 3 to 5 steps only.
 
@@ -20,8 +18,7 @@ Research:
 
 Final:
     prompt: |
-        I want you to act as a Helpful AI. Given the CONTENT below try to answer the user the best as you
-        can.
+        I want you to act as a Helpful AI. Given the CONTENT below try to answer the user the best as you can.
 
         Do not make up new information outside the CONTENT. If there is no information in the CONTENT just say there is no information to answer.
 
