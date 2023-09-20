@@ -79,17 +79,7 @@ def upload(
         )
 
     internal_token = auth_repo.get_token(user.sub)
-    if internal_token is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="internal token not found",
-        )
-
-    if internal_token.is_expired():
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="unable to proceed because the internal token is about to expire.",
-        )
+    internal_token = check_token_expired(internal_token)
 
     doc_id = document_repo.create(
         namespace=namespace,

@@ -5,6 +5,7 @@ services:
         volumes:
             - ./ai:/app
         environment:
+            - LOCAL=1
             - PORT=8080
             - LIFF_CLIENT_ID=2000615876
             - LLM_ENDPOINT=http://host.docker.internal:8080

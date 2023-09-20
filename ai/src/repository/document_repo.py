@@ -24,7 +24,7 @@ from repository.base_db import (
     get_db,
 )
 from repository.document_parser import DocumentParseResult, DocumentParser
-from repository.helpers import cprint_blue, cprint_green, get_timestamp
+from repository.helpers import cprint_cyan, cprint_green, get_timestamp
 from repository.llm_facade import ChatModelEnum, LLMFacade
 from repository.storage_facade import StorageFacade
 from repository.db_connect_base import DbConnectBase
@@ -219,7 +219,9 @@ class DocumentRepo(DbConnectBase):
 
     def _get_document_cluster_for_summary(self, doc_embeddings: List[List[float]]):
         num_clusters = min(len(doc_embeddings), 5)
-        kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(doc_embeddings)
+        kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init="auto").fit(
+            doc_embeddings
+        )
         closest_indices = get_closest_indices(doc_embeddings, num_clusters, kmeans)
         closest_indices = sorted(closest_indices)
         return closest_indices
@@ -257,8 +259,9 @@ class DocumentRepo(DbConnectBase):
         data = self.get_file_or_not_found(doc_id)
         item = self.get_doc_or_not_found(id=doc_id)
 
-        process_status: DocumentProcessStatusEnum = DocumentProcessStatusEnum.Processed
+        process_status: DocumentProcessStatusEnum = DocumentProcessStatusEnum.Processing
 
+        cprint_cyan(f"Processing {doc_id}")
         DocumentDB.update(
             {
                 DocumentDB.process_status: process_status.value,
@@ -312,7 +315,7 @@ class DocumentRepo(DbConnectBase):
             process_status = DocumentProcessStatusEnum.Processed
 
         except Exception as e:
-            cprint_blue(f"process_vectors doc_id={item.doc_id} ERR >>> {e}")
+            cprint_cyan(f"process_vectors doc_id={item.doc_id} ERR >>> {e}")
             process_status = DocumentProcessStatusEnum.Error
 
         finally:

@@ -8,7 +8,7 @@ from langchain.prompts import (
 from pydantic import BaseModel
 
 import yaml
-from repository.helpers import cprint_blue, cprint_green, get_timestamp, messages_to_str
+from repository.helpers import cprint_cyan, cprint_green, get_timestamp, messages_to_str
 from repository.llm_facade import ChatModelEnum, LLMFacade
 from repository.vector_store_repo import VectorQueryResult, VectorStoreRepo
 from systems.base_ai_ystem import BaseAISystem
@@ -67,8 +67,8 @@ My question is: {question}
         ).to_messages()
         planning_res = do_llm_chat4(messages_prompt)
         cprint_green(messages_to_str(messages_prompt))
-        cprint_blue(planning_res)
-        cprint_blue("-" * 80)
+        cprint_cyan(planning_res)
+        cprint_cyan("-" * 80)
 
         end_ts = get_timestamp()
 

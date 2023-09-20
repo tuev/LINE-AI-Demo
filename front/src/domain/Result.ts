@@ -7,7 +7,7 @@ export enum DataState {
     HasError = 'HasError',
 }
 
-export class Result<T, Err> {
+export class Result<Err, T> {
     public value: T;
     public err: Err | null = null;
     public state: DataState = DataState.NotInited;
@@ -49,6 +49,7 @@ export class Result<T, Err> {
     setValue(val: T) {
         this.state = DataState.HasData;
         this.value = val;
+        this.err = null
         return this;
     }
 

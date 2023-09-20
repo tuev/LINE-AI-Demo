@@ -4,7 +4,7 @@ import {Result} from '@/domain/Result';
 import {pipe} from 'fp-ts/lib/function';
 import {ref} from 'vue';
 
-export const last10Usage = ref(new Result<any[], string>([]));
+export const last10Usage = ref(new Result<string, any[]>([]));
 
 export const getUsage = async () => {
     last10Usage.value.setLoading();

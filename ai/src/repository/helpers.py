@@ -38,7 +38,7 @@ def messages_to_str(msg: List[BaseMessage]):
 
 class bcolors:
     HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
+    OKORANGE = "\033[94m"
     OKCYAN = "\033[96m"
     OKGREEN = "\033[92m"
     WARNING = "\033[93m"
@@ -61,12 +61,16 @@ def cprint_warn(text: str):
 
 
 def cprint_debug(text: str):
-    cprint(text, bcolors.OKCYAN)
+    cprint(text, bcolors.FAIL)
 
 
 def cprint_green(text: str):
     cprint(text, bcolors.OKGREEN)
 
 
-def cprint_blue(text: str):
-    cprint(text, bcolors.OKBLUE)
+def cprint_orange(text: str):
+    cprint(text, bcolors.OKORANGE)
+
+
+def cprint_cyan(text: str):
+    cprint(text, bcolors.OKCYAN)
