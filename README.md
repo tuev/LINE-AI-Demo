@@ -53,7 +53,9 @@ Built with sveltekit. And deployed to Cloudflare Page.
 
 More information inside the [front/README.md](/front/README.md)
 
-## S3 setup - Minio
+## Object Storage - Minio as S3 service
+
+[Minio](https://min.io/)
 
 Create new access and secret key for S3 and setup it in .env file.
 
