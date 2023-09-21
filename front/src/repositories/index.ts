@@ -3,6 +3,7 @@ import {LiffRepo} from './LineRepo';
 import axios from 'axios';
 import {DocumentRepo} from './DocumentRepo';
 import {AuthRepo} from './AuthRepo';
+import {AIRepo} from './AIRepo';
 
 const apiEndpoint = import.meta.env.VITE_API_ENDPOINT;
 const liffId = import.meta.env.VITE_LIFF_ID;
@@ -18,3 +19,4 @@ apiClient.interceptors.request.use(req => {
 });
 
 export const documentRepo = new DocumentRepo(apiClient);
+export const aiRepo = new AIRepo(apiClient);

@@ -33,7 +33,7 @@ def num_tokens_from_string(string: str, encoding_name: str = "cl100k_base") -> i
 
 
 def messages_to_str(msg: List[BaseMessage]):
-    return "\n".join([f"{m.type}:{m.content}" for m in msg])
+    return "\n".join([f"{m.type}:\n{m.content}" for m in msg])
 
 
 class bcolors:
@@ -50,7 +50,7 @@ class bcolors:
 
 def cprint(text: str, color):
     if os.getenv("LOCAL") is not None:
-        with open("./log.out", "a") as f:
+        with open("./out.log", "a") as f:
             f.write(text + "\n")
 
         print(color + text + bcolors.ENDC)

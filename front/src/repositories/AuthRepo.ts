@@ -1,5 +1,5 @@
 import * as TE from 'fp-ts/lib/TaskEither';
-import {AxiosError, AxiosInstance} from 'axios';
+import {AxiosInstance} from 'axios';
 import {AppError} from './AppError';
 
 export class AuthRepo {
@@ -12,6 +12,16 @@ export class AuthRepo {
                     token,
                 });
                 return data;
+            },
+            (err: any) => AppError.fromAxiosError(err)
+        );
+    }
+
+    getInternalTokenTimestamp() {
+        return TE.tryCatch(
+            async () => {
+                const {data} = await this.client.get<string>(`/auth/internal_token_timestamp`);
+                return new Date(data);
             },
             (err: any) => AppError.fromAxiosError(err)
         );

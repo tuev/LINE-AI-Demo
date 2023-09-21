@@ -1,9 +1,8 @@
 import re
 from typing import Any, List
-from pydantic import BaseModel
 
 import requests
-from langchain.docstore.document import Document
+from pydantic import BaseModel
 
 
 class DocumentParseResult(BaseModel):
@@ -85,9 +84,3 @@ class DocumentParser:
             docs[-1].text += "\n\n" + content
 
         return docs
-
-    def docs_from_unstructured(self, unstructured_docs):
-        return [
-            Document(page_content=doc.get("text", ""), metadata=doc.get("metadata", {}))
-            for doc in unstructured_docs
-        ]

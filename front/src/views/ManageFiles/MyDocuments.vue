@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {deleteDocument, deleteDocumentResult} from '@/application/documentStore';
-import {Document} from '@/domain/Document';
+import {Document, uploadTimestampFormat} from '@/domain/Document';
 
 const props = defineProps<{documents: Document[]}>();
 
@@ -38,6 +38,10 @@ const onDelete = (docId: string) => {
             <template v-slot:append>
                 <v-menu location="bottom">
                     <template v-slot:activator="{props}">
+                        <div class="text-end text-caption">
+                            <div>{{ doc.process_status }}</div>
+                            <div>{{ uploadTimestampFormat(new Date(doc.upload_at)) }}</div>
+                        </div>
                         <v-btn
                             v-bind="props"
                             color="grey-lighten-1"
@@ -46,11 +50,6 @@ const onDelete = (docId: string) => {
                         ></v-btn>
                     </template>
                     <v-list>
-                        <v-list-item>
-                            <v-list-item-title>
-                                <span class="text-caption">status: {{ doc.process_status }}</span>
-                            </v-list-item-title>
-                        </v-list-item>
                         <v-list-item @click="onCopyDocId(doc.doc_id)">
                             <v-list-item-title>Copy ID</v-list-item-title>
                         </v-list-item>

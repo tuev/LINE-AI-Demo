@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import {
+    getInternalTokenTimestamp,
+    internalTokenTimestamp,
     liffProfile,
     login,
     logout,
@@ -9,6 +11,7 @@ import {
 import {useRouter} from 'vue-router';
 import {RouteName} from '@/router';
 import {ref} from 'vue';
+import {tokenTimestampFmt} from '@/domain/LineProfile';
 
 const router = useRouter();
 
@@ -29,11 +32,16 @@ const onSetInternalToken = async () => {
         token.value = '';
     }
 };
+
+const onMenuUpdate = (open: boolean) => {
+    if (!open) return;
+    getInternalTokenTimestamp();
+};
 </script>
 
 <template>
     <v-toolbar color="white" class="my-toolbar">
-        <v-toolbar-title @click="router.push({name: RouteName.HomePage})">
+        <v-toolbar-title @click="router.push({name: RouteName.Home})">
             <div class="d-flex align-center" style="cursor: pointer">
                 <div class="ms-3 me-5">
                     <v-img height="80%" width="100px" src="/line-logo.png"></v-img>
@@ -45,7 +53,11 @@ const onSetInternalToken = async () => {
         <v-spacer></v-spacer>
 
         <v-progress-circular v-if="liffProfile.loading" indeterminate></v-progress-circular>
-        <v-menu v-else-if="liffProfile.hasData && liffProfile.value != null" location="bottom">
+        <v-menu
+            v-else-if="liffProfile.hasData && Boolean(liffProfile.value)"
+            location="bottom"
+            @update:model-value="onMenuUpdate"
+        >
             <template v-slot:activator="{props}">
                 <v-btn color="primary" dark v-bind="props" icon>
                     <v-avatar>
@@ -81,6 +93,10 @@ const onSetInternalToken = async () => {
                     </v-card-text>
 
                     <v-card-actions>
+                        <v-progress-circular v-if="internalTokenTimestamp.loading" indeterminate />
+                        <span v-if="internalTokenTimestamp.hasData" class="ms-5 text-caption">
+                            Current Token: {{ tokenTimestampFmt(internalTokenTimestamp.value as Date) }}
+                        </span>
                         <v-spacer></v-spacer>
 
                         <v-btn

@@ -1,7 +1,7 @@
 import * as TE from 'fp-ts/lib/TaskEither';
 import {AxiosInstance} from 'axios';
 import {AppError} from './AppError';
-import {Document} from '@/domain/Document';
+import {Document, DocumentWithSimilarity} from '@/domain/Document';
 
 export class DocumentRepo {
     constructor(private client: AxiosInstance) {}
@@ -44,6 +44,23 @@ export class DocumentRepo {
             async () => {
                 const {data} = await this.client.get<Document[]>(
                     `/document/list_public/?skipt=${skip}&limit=${limit}`
+                );
+                return data;
+            },
+            (err: any) => AppError.fromAxiosError(err)
+        );
+    }
+
+    queryPublicDocuments(namespace: string, query: string) {
+        return TE.tryCatch(
+            async () => {
+                const {data} = await this.client.post<DocumentWithSimilarity[]>(
+                    `/document/query_public_document_summary`,
+                    {
+                        namespace,
+                        query,
+                        limit: 5,
+                    }
                 );
                 return data;
             },

@@ -3,17 +3,14 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, BinaryIO, List
 from uuid import uuid4
-from fastapi import HTTPException, status
-from langchain.prompts import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-)
 
-from peewee import CharField, DateTimeField, IntegerField, TextField
-from pydantic import BaseModel
 import numpy as np
 import yaml
+from fastapi import HTTPException, status
+from peewee import CharField, DateTimeField, IntegerField, TextField
+from pydantic import BaseModel
+from sklearn.cluster import KMeans
+from systems.base_ai_ystem import BaseAISystem
 
 from repository.base_db import (
     BaseDBModel,
@@ -23,16 +20,12 @@ from repository.base_db import (
     from_str,
     get_db,
 )
-from repository.document_parser import DocumentParseResult, DocumentParser
-from repository.helpers import cprint_cyan, cprint_green, get_timestamp
+from repository.db_connect_base import DbConnectBase
+from repository.document_parser import DocumentParser, DocumentParseResult
+from repository.helpers import cprint_cyan, cprint_green, get_timestamp, messages_to_str
 from repository.llm_facade import ChatModelEnum, LLMFacade
 from repository.storage_facade import StorageFacade
-from repository.db_connect_base import DbConnectBase
 from repository.vector_store_repo import VectorStoreRepo
-
-from sklearn.cluster import KMeans
-
-from systems.base_ai_ystem import BaseAISystem
 
 
 class DocumentDB(BaseDBModel):
@@ -151,8 +144,8 @@ class DocumentRepo(DbConnectBase):
         with open("/app/src/prompts/simple.yaml") as f:
             config = yaml.safe_load(f)
 
-        self._summary_prompt = BaseAISystem.load_messages_chat(config, "Summary")
-        self._summary_all_prompt = BaseAISystem.load_messages_chat(config, "SummaryAll")
+        self._summary_prompt = BaseAISystem.load_messages(config, "Summary")
+        self._summary_all_prompt = BaseAISystem.load_messages(config, "SummaryAll")
 
     def get_doc_or_not_found(self, id: str) -> Document:
         item = DocumentDB.get_or_none(DocumentDB.doc_id == id)
@@ -162,6 +155,15 @@ class DocumentRepo(DbConnectBase):
             )
 
         return item
+
+    def get_docs_or_not_found(self, ids: List[str]) -> List[Document]:
+        items = DocumentDB.select().where(DocumentDB.doc_id.in_(ids))
+        if len(items) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="not found document"
+            )
+
+        return [Document.from_db(i) for i in items]
 
     def create(
         self,
@@ -227,32 +229,30 @@ class DocumentRepo(DbConnectBase):
         return closest_indices
 
     def _get_summary_of_text(self, internal_token: str, text: str):
-        messages = ChatPromptTemplate.from_messages(
-            [
-                SystemMessagePromptTemplate.from_template(self._summary_prompt),
-                HumanMessagePromptTemplate.from_template("{text}\n\nSUMMARY:"),
-            ]
-        )
+        messages = self._summary_prompt.format_prompt(text=text).to_messages()
+        cprint_cyan(messages_to_str(messages))
         summary = self._llm.internal_chat(
-            model=ChatModelEnum.Chat_4,
+            model=ChatModelEnum.Chat_3_5,
             internal_token=internal_token,
-            messages=messages.format_prompt(text=text).to_messages(),
+            messages=messages,
         )
+        cprint_cyan(summary)
+
         return summary
 
     def _get_combined_summary(self, internal_token: str, texts: List[str]):
-        messages = ChatPromptTemplate.from_messages(
-            [
-                SystemMessagePromptTemplate.from_template(self._summary_all_prompt),
-                HumanMessagePromptTemplate.from_template("{text}\n\nFULL SUMMARY:"),
-            ]
-        )
         combined_summary_list = "\n---\n".join(texts)
+        messages = self._summary_all_prompt.format_prompt(
+            text=combined_summary_list
+        ).to_messages()
+        cprint_cyan(messages_to_str(messages))
         summary_all = self._llm.internal_chat(
             model=ChatModelEnum.Chat_4,
             internal_token=internal_token,
-            messages=messages.format_prompt(text=combined_summary_list).to_messages(),
+            messages=messages,
         )
+        cprint_cyan(summary_all)
+
         return summary_all
 
     def process_vector_and_summary(self, internal_token: str, doc_id: str):

@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import {listMyDocuments, myDocuments, uploadFile, uploadResult} from '@/application/documentStore';
+import {
+    listMyDocuments,
+    listMyDocumentsResult,
+    uploadFile,
+    uploadFileResult,
+} from '@/application/documentStore';
 import {onMounted} from 'vue';
 import {ref} from 'vue';
 import MyDocuments from './MyDocuments.vue';
 
 const namespace = ref('test');
-const files = ref();
+const files = ref([]);
 
-const onUpload = () => {
-    uploadFile(namespace.value, files.value[0]);
+const onUpload = async () => {
+    await uploadFile(namespace.value, files.value[0]);
+    files.value = [];
 };
 
 const onListMyDocuments = () => {
@@ -43,7 +49,7 @@ onMounted(() => {
                     <v-btn
                         variant="flat"
                         color="primary"
-                        :loading="uploadResult.loading"
+                        :loading="uploadFileResult.loading"
                         @click="onUpload"
                     >
                         Upload
@@ -51,9 +57,17 @@ onMounted(() => {
                 </div>
             </v-col>
             <v-col cols="9">
-                <v-progress-circular v-if="myDocuments.loading" indeterminate></v-progress-circular>
-                <v-row v-else-if="myDocuments.hasError">{{ myDocuments.err }}</v-row>
-                <MyDocuments v-else-if="myDocuments.hasData" :documents="myDocuments.value" />
+                <v-progress-circular
+                    v-if="listMyDocumentsResult.loading"
+                    indeterminate
+                ></v-progress-circular>
+                <v-row v-else-if="listMyDocumentsResult.hasError">
+                    {{ listMyDocumentsResult.err }}
+                </v-row>
+                <MyDocuments
+                    v-else-if="listMyDocumentsResult.hasData"
+                    :documents="listMyDocumentsResult.value"
+                />
             </v-col>
         </v-row>
     </v-container>

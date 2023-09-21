@@ -4,33 +4,33 @@ import {documentRepo} from '@/repositories';
 import {Result} from '@/domain/Result';
 import {ref} from 'vue';
 import {pipe} from 'fp-ts/lib/function';
-import {Document} from '@/domain/Document';
+import {Document, DocumentWithSimilarity} from '@/domain/Document';
 
-export const uploadResult = ref(new Result<string, null>(null));
+export const uploadFileResult = ref(new Result<string, null>(null));
 
 export const uploadFile = async (namespace: string, file: File) => {
-    uploadResult.value.setLoading();
+    uploadFileResult.value.setLoading();
     await pipe(
         documentRepo.upload(namespace, file),
         TE.fold(
-            err => T.of(uploadResult.value.setError(err.msg)),
+            err => T.of(uploadFileResult.value.setError(err.msg)),
             () => {
                 listMyDocuments();
-                return T.of(uploadResult.value.setValue(null));
+                return T.of(uploadFileResult.value.setValue(null));
             }
         )
     )();
 };
 
-export const myDocuments = ref(new Result<string, Document[]>([]));
+export const listMyDocumentsResult = ref(new Result<string, Document[]>([]));
 
 export const listMyDocuments = async () => {
-    myDocuments.value.setLoading();
+    listMyDocumentsResult.value.setLoading();
     await pipe(
         documentRepo.listMy(0, 10),
         TE.fold(
-            err => T.of(myDocuments.value.setError(err.msg)),
-            res => T.of(myDocuments.value.setValue(res))
+            err => T.of(listMyDocumentsResult.value.setError(err.msg)),
+            res => T.of(listMyDocumentsResult.value.setValue(res))
         )
     )();
 };
@@ -50,5 +50,19 @@ export const deleteDocument = async (docId: string) => {
         TE.mapLeft(err => {
             deleteDocumentResult.value.setError(err.msg);
         })
+    )();
+};
+
+export const queryPublicDocumentsResult = ref(new Result<string, DocumentWithSimilarity[]>([]));
+
+export const queryPublicDocuments = async (namespace: string, query: string) => {
+    queryPublicDocumentsResult.value.reset()
+    queryPublicDocumentsResult.value.setLoading();
+    await pipe(
+        documentRepo.queryPublicDocuments(namespace, query),
+        TE.fold(
+            err => T.of(queryPublicDocumentsResult.value.setError(err.msg)),
+            res => T.of(queryPublicDocumentsResult.value.setValue(res))
+        )
     )();
 };

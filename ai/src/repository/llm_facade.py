@@ -181,7 +181,7 @@ class LLMFacade:
             json=payload,
             headers=headers,
             stream=stream,
-            timeout=60,  # TODO: Move timeout to env
+            timeout=120,  # TODO: Move timeout to env
         )
 
         return resp
@@ -231,6 +231,7 @@ class LLMFacade:
         res = requests.post(
             "http://jp.deeppocket.linecorp.com/contents-ml/embtxt-mling-xlm-xl-pca/get_emb",
             json={"text": text, "normalize": True, "startidx": 0},
+            timeout=10,
         )
         data = res.json()
         if data.get("status") != "SUCCESS":

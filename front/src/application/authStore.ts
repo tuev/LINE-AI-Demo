@@ -48,3 +48,16 @@ export const setInternalToken = async (token: string) => {
         )
     )();
 };
+
+export const internalTokenTimestamp = ref(new Result<string, Date | null>(null));
+
+export const getInternalTokenTimestamp = async () => {
+    internalTokenTimestamp.value.setLoading();
+    await pipe(
+        authRepo.getInternalTokenTimestamp(),
+        TE.fold(
+            err => T.of(internalTokenTimestamp.value.setError(err.msg)),
+            res => T.of(internalTokenTimestamp.value.setValue(res))
+        )
+    )();
+};

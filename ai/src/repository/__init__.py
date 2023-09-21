@@ -49,7 +49,7 @@ document_repo = DocumentRepo(
     storage_facade=storage_facade,
     document_parser=document_parser,
 )
-simple_ai_system = SimpleAISystem(llm_facade, vector_store_repo)
+simple_ai_system = SimpleAISystem(llm_facade, document_repo, vector_store_repo)
 
 __all__ = [
     "auth_repo",
