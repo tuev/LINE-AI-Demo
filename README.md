@@ -39,11 +39,32 @@ If already built. Just need:
 docker compose up -d
 ```
 
+## Vector database
+
+### Create Vector plugin
+
+```SQL
+CREATE EXTENSION vector;
+```
+
 ## Frontend
 
 Built with sveltekit. And deployed to Cloudflare Page.
 
 More information inside the [front/README.md](/front/README.md)
+
+## S3 setup - Minio
+
+Create new access and secret key for S3 and setup it in .env file.
+
+Example:
+
+```
+S3_ENDPOINT=minio:9000
+S3_ACCESS_KEY=
+S3_SECRET_KEY=
+S3_REGION=local
+```
 
 # License
 

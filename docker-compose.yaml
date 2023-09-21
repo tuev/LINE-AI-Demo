@@ -5,11 +5,18 @@ services:
         volumes:
             - ./ai:/app
         environment:
+            - LOCAL=1
             - PORT=8080
             - LIFF_CLIENT_ID=2000615876
             - LLM_ENDPOINT=http://host.docker.internal:8080
+            - UNSTRUCTURED_ENDPOINT=http://unstructured:8000
+            - SUPPORT_TYPES=application/pdf,text/html
+            - S3_ENDPOINT=${S3_ENDPOINT}
+            - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+            - S3_SECRET_KEY=${S3_SECRET_KEY}
+            - S3_REGION=${S3_REGION}
         ports:
-            - '8081:8080'
+            - 8081:8080
         command: "sh -c 'sleep infinity'"
 
     database:
@@ -22,3 +29,20 @@ services:
             POSTGRES_USER: root
             POSTGRES_PASSWORD: password
             POSTGRES_DB: line-ai-demo
+
+    unstructured:
+        image: quay.io/unstructured-io/unstructured-api:0.0.43
+        ports:
+            - '8000:8000'
+
+    minio:
+        image: quay.io/minio/minio
+        volumes:
+            - ./blob-data:/data
+        environment:
+            MINIO_ROOT_USER: root
+            MINIO_ROOT_PASSWORD: password
+        ports:
+            - 9000:9000
+            - 9090:9090
+        command: server /data --console-address ":9090"

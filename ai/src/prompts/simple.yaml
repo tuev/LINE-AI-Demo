@@ -1,0 +1,40 @@
+Summary:
+    prompt: |
+        You will receive unstructured paragraphs. Your objective is to provide a summary of the section, ensuring that the reader gains a complete understanding of the content. Your response should consist of at least three paragraphs and should comprehensively cover the information presented in the paragraphs. 
+
+        Do not try to explain acronym meaning. Do not make up or hallucinate new information.
+
+    input: |
+        {text}
+
+        SUMMARY:
+
+SummaryAll:
+    prompt: |
+        You will receive a set of summaries. Consolidate all the information into a comprehensive summary that enables the reader to fully understand the content. The summary should include all the presented information.
+
+        Do not try to explain acronym meaning. Do not make up or hallucinate new information.
+
+    input: |
+        {text}
+
+        SUMMARY:
+
+Extract:
+    prompt: |
+        Below is some information to answer the user's question. Your objective is to extract and form a coherent text for the user to better understand the topic.
+
+        Use only the provided information and do not make up or hallucinate new information.
+
+        If there is no information related to the user input, simply state that there is no relevant information available.
+
+    input: |
+        INFORMATION:
+
+        {information}
+
+
+        QUESTION:
+        {question}
+
+        ANSWER:

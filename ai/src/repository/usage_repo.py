@@ -1,16 +1,16 @@
-from datetime import datetime, timezone
+from datetime import datetime
 import json
 from typing import List
 from peewee import CharField, DateTimeField, TextField
 from pydantic import BaseModel
 
 from repository.auth_repo import LineUserInfo
-from repository.base_db import BaseDBModel, get_db
+from repository.base_db import BaseDBModel, from_datetime, get_db
 from repository.helpers import get_timestamp
 from repository.llm_facade import LLMUsage
 
 
-class Usage(BaseDBModel):
+class UsageDb(BaseDBModel):
     user_id = CharField()
     userdetail = TextField()
     query = TextField()
@@ -34,7 +34,7 @@ class UsageRepo:
         result: str,
         usage: LLMUsage | None,
     ):
-        item = Usage(
+        item = UsageDb(
             user_id=user_id,
             userdetail=userdetail.json(),
             query=query,
@@ -48,8 +48,8 @@ class UsageRepo:
     def last_usages(self, amount=10) -> List[UsageUserDetail]:
         results: List[UsageUserDetail] = []
         for result in (
-            Usage.select(Usage.userdetail, Usage.timestamp)
-            .order_by(Usage.timestamp.desc())
+            UsageDb.select(UsageDb.userdetail, UsageDb.timestamp)
+            .order_by(UsageDb.timestamp.desc())
             .limit(amount)
         ):
             userdetail = json.loads(result.userdetail)
@@ -57,7 +57,7 @@ class UsageRepo:
                 UsageUserDetail(
                     name=userdetail.get("name"),
                     picture=userdetail.get("picture"),
-                    timestamp=result.timestamp.replace(tzinfo=timezone.utc),
+                    timestamp=from_datetime(result.timestamp),
                 )
             )
 
@@ -65,4 +65,4 @@ class UsageRepo:
 
 
 # Create table if not exists
-get_db().create_tables([Usage])
+get_db().create_tables([UsageDb])
