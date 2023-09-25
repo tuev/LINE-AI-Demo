@@ -74,7 +74,7 @@ class SimpleAISystem:
 
     def extract(self, token: str, question: str, documents: List[str]) -> ExtractResult:
         start_ts = get_timestamp()
-        query_vector = self._llm.line_embeddings(question)
+        query_vector = self._llm.openai_embeddings(question)
         references = self._vector_store_repo.similarity_search_by_documents(
             query_vector, documents, limit=5
         )

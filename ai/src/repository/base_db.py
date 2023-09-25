@@ -40,7 +40,7 @@ def from_datetime(x: Any) -> datetime:
 class VectorField(Field):
     field_type = "vector"
 
-    def __init__(self, length=768, *args, **kwargs):
+    def __init__(self, length=1536, *args, **kwargs):
         self.length = length
         super(VectorField, self).__init__(*args, **kwargs)
 
