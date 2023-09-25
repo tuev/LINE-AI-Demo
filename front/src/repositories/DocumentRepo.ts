@@ -56,6 +56,16 @@ export class DocumentRepo {
         );
     }
 
+    processDocument(docId: string) {
+        return TE.tryCatch(
+            async () => {
+                const {data} = await this.client.post<string>(`${this.prefix}/do_process/${docId}`);
+                return data;
+            },
+            (err: any) => AppError.fromAxiosError(err)
+        );
+    }
+
     delete(docId: string) {
         return TE.tryCatch(
             async () => {
@@ -70,7 +80,7 @@ export class DocumentRepo {
         return TE.tryCatch(
             async () => {
                 const {data} = await this.client.get<Document[]>(
-                    `${this.prefix}/list_my?skipt=${skip}&limit=${limit}`
+                    `${this.prefix}/list_my/?skipt=${skip}&limit=${limit}`
                 );
                 return data;
             },
@@ -82,7 +92,7 @@ export class DocumentRepo {
         return TE.tryCatch(
             async () => {
                 const {data} = await this.client.get<Document[]>(
-                    `${this.prefix}/list_public?skipt=${skip}&limit=${limit}`
+                    `${this.prefix}/list_public/?skipt=${skip}&limit=${limit}`
                 );
                 return data;
             },

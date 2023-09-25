@@ -70,6 +70,22 @@ export const parseHtml = async (html: string) => {
     )();
 };
 
+export const processDocumentResult = ref(new Result<string, null>(null));
+
+export const processDocument = async (docId: string) => {
+    processDocumentResult.value.setLoading();
+    await pipe(
+        documentRepo.processDocument(docId),
+        TE.fold(
+            err => T.of(processDocumentResult.value.setError(err.msg)),
+            () => {
+                listMyDocuments();
+                return T.of(processDocumentResult.value.setValue(null));
+            }
+        )
+    )();
+};
+
 export const listMyDocumentsResult = ref(new Result<string, Document[]>([]));
 
 export const listMyDocuments = async () => {

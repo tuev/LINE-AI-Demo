@@ -54,13 +54,18 @@ const onUploadText = async (value: {title: string; text: string}) => {
         <v-row>
             <v-col cols="3">
                 <div class="d-flex flex-column" style="gap: 20px">
-                    <v-text-field v-model="namespace" label="Namespace"></v-text-field>
+                    <v-text-field
+                        v-model="namespace"
+                        label="Namespace"
+                        variant="outlined"
+                    ></v-text-field>
 
                     <div>
                         <h6 class="mb-2">Upload File</h6>
                         <v-file-input
                             v-model="files"
                             accept="application/pdf, text/html"
+                            variant="outlined"
                         ></v-file-input>
                         <v-btn
                             variant="flat"
@@ -72,9 +77,15 @@ const onUploadText = async (value: {title: string; text: string}) => {
                         </v-btn>
                     </div>
 
+                    <hr style="opacity: 0.2" />
+
                     <div>
                         <h6 class="mb-2">Upload Landpress</h6>
-                        <v-text-field v-model="landpressUrl" label="Landpress URL"></v-text-field>
+                        <v-text-field
+                            v-model="landpressUrl"
+                            label="Landpress URL"
+                            variant="outlined"
+                        ></v-text-field>
                         <v-btn
                             variant="flat"
                             color="primary"
@@ -84,6 +95,8 @@ const onUploadText = async (value: {title: string; text: string}) => {
                             Upload Landpress
                         </v-btn>
                     </div>
+
+                    <hr style="opacity: 0.2" />
 
                     <div>
                         <h6 class="mb-2">Upload HTML</h6>

@@ -1,5 +1,5 @@
 import liff from '@line/liff';
-import {LiffRepo} from './LineRepo';
+import {LiffRepo} from './LiffRepo';
 import axios from 'axios';
 import {DocumentRepo} from './DocumentRepo';
 import {AuthRepo} from './AuthRepo';

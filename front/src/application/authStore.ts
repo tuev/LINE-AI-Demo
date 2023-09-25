@@ -6,6 +6,8 @@ import type {LiffProfile} from '@/domain/LineProfile';
 import {computed, ref} from 'vue';
 import {pipe} from 'fp-ts/lib/function';
 
+export const getIDToken = () => liffRepo.getIDToken();
+
 export const liffProfile = ref(new Result<string, LiffProfile | null>(null));
 
 export const isLoggedIn = computed(() => {
