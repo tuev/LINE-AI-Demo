@@ -1,5 +1,4 @@
 import json
-import multiprocessing
 import traceback
 from datetime import datetime
 from enum import Enum
@@ -233,13 +232,8 @@ class DocumentRepo(DbConnectBase):
 
     def _get_document_embbedings(self, doc_results: List[str]) -> List[List[float]]:
         doc_embeddings: List[List[float]] = []
-        with multiprocessing.Pool(processes=5) as pool:
-            workers = [
-                pool.apply_async(self._llm.openai_embeddings, (doc,))
-                for doc in doc_results
-            ]
-            for result in workers:
-                doc_embeddings.append(result.get())
+        for doc in doc_results:
+            doc_embeddings.append(self._llm.openai_embeddings(doc))
 
         return doc_embeddings
 

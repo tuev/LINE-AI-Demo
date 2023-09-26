@@ -17,7 +17,6 @@ services:
             - OPENAI_KEY=${OPENAI_KEY}
         ports:
             - 8081:8080
-        command: "sh -c 'sleep infinity'"
 
     database:
         image: 'ankane/pgvector'
