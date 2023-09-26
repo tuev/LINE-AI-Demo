@@ -55,7 +55,7 @@ const onUploadText = async (value: {title: string; text: string}) => {
             </div>
         </v-row>
         <v-row>
-            <v-col cols="3">
+            <v-col cols="4">
                 <div class="d-flex flex-column" style="gap: 20px">
                     <v-text-field
                         v-model="namespace"
@@ -69,6 +69,7 @@ const onUploadText = async (value: {title: string; text: string}) => {
                             v-model="files"
                             accept="application/pdf, text/html"
                             variant="outlined"
+                            :error-messages="uploadFileResult.err || ''"
                         ></v-file-input>
                         <v-btn
                             variant="flat"
@@ -110,7 +111,7 @@ const onUploadText = async (value: {title: string; text: string}) => {
                     </div>
                 </div>
             </v-col>
-            <v-col cols="9">
+            <v-col cols="8">
                 <v-progress-circular
                     v-if="listMyDocumentsResult.loading"
                     indeterminate

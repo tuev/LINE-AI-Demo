@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@mdi/font": "^7.2.96",
+    "@vitejs/plugin-basic-ssl": "^1.0.1",
     "@vitejs/plugin-vue": "^4.2.3",
     "sass": "^1.67.0",
     "typescript": "^5.0.2",

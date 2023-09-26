@@ -1,20 +1,28 @@
-import {defineConfig} from 'vite';
+import {defineConfig, loadEnv} from 'vite';
 import vue from '@vitejs/plugin-vue';
 import {fileURLToPath, URL} from 'url';
-import fs from 'fs';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-    plugins: [vue()],
-    server: {
-        https: {
-            key: fs.readFileSync(`${__dirname}/dev-certs/key.pem`),
-            cert: fs.readFileSync(`${__dirname}/dev-certs/cert.pem`),
+export default ({mode}) => {
+    process.env = {...process.env, ...loadEnv(mode, process.cwd())};
+    return defineConfig({
+        plugins: [vue(), basicSsl()],
+        server: {
+            host: 'local-line-ai-demo.linecorp.com',
+            port: 5173,
+            https: true,
+            proxy: {
+                '/api': {
+                    target: process.env.VITE_API_PROXY,
+                    rewrite: path => path.replace(/^\/api/, ''),
+                },
+            },
         },
-    },
-    resolve: {
-        alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url)),
+        resolve: {
+            alias: {
+                '@': fileURLToPath(new URL('./src', import.meta.url)),
+            },
         },
-    },
-});
+    });
+};

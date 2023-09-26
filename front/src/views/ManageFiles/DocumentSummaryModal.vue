@@ -27,6 +27,9 @@ const localValue = computed({
             </v-card-text>
 
             <v-card-actions>
+                <span v-if="processDocumentResult.hasError" class="text-caption text-red">
+                    {{ processDocumentResult.err }}
+                </span>
                 <v-spacer></v-spacer>
 
                 <v-btn
