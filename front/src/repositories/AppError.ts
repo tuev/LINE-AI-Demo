@@ -11,7 +11,10 @@ export class AppError<T> {
             console.error(err);
             return new AppError(err, 'Server Internal Error');
         }
-        const {detail} = err.response.data as {detail: string};
-        return new AppError(err, detail || String(JSON.stringify(err.response.data)));
+        const {detail} = err.response.data as {detail: {loc: any; msg: string}[]};
+        return new AppError(
+            err,
+            detail?.map(d => d.msg).join('.') || String(JSON.stringify(err.response.data))
+        );
     }
 }

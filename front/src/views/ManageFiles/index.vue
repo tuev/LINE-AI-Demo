@@ -7,6 +7,7 @@ import {
     uploadLandpress,
     uploadLandpressResult,
     uploadText,
+    uploadTextResult,
 } from '@/application/documentStore';
 import {onMounted} from 'vue';
 import {ref} from 'vue';
@@ -39,7 +40,9 @@ const isUploadHtmlModalOpen = ref(false);
 
 const onUploadText = async (value: {title: string; text: string}) => {
     await uploadText(namespace.value, value.title, value.text);
-    isUploadHtmlModalOpen.value = false;
+    if (!uploadTextResult.value.hasError) {
+        isUploadHtmlModalOpen.value = false;
+    }
 };
 </script>
 

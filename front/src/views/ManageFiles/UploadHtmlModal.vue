@@ -57,6 +57,9 @@ const onUpload = () => {
             </v-card-text>
 
             <v-card-actions>
+                <span v-if="uploadTextResult.hasError" class="text-red">
+                    {{ uploadTextResult.err }}
+                </span>
                 <v-spacer></v-spacer>
 
                 <v-btn

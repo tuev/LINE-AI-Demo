@@ -123,6 +123,19 @@ def upload_text(
     body: UploadText,
     background_task: BackgroundTasks,
 ):
+    if len(body.text) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="must have title"
+        )
+
+    min_body = 300
+
+    if len(body.text) < min_body:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"body is too small. must have more than {min_body} characters",
+        )
+
     internal_token = auth_repo.get_token(user.sub)
     internal_token = check_token_expired(internal_token)
 
@@ -167,6 +180,15 @@ def upload_landpress(
     doc = document_download.landpress_or_none(body.url)
     if doc is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+
+
+    min_body = 300
+
+    if len(doc.body) < min_body:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"body is too small. must have more than {min_body} characters"
+        )
 
     internal_token = auth_repo.get_token(user.sub)
     internal_token = check_token_expired(internal_token)
