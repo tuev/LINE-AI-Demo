@@ -262,7 +262,9 @@ class DocumentRepo(DbConnectBase):
             internal_token=internal_token,
             messages=messages,
         )
-        cprint_cyan(summary)
+        cprint_green(">" * 80)
+        cprint_green(summary)
+        cprint_green("=" * 80)
 
         return summary
 
@@ -287,9 +289,6 @@ class DocumentRepo(DbConnectBase):
         summaries: List[str] = []
         for text in texts:
             summary = self._get_summary_of_text(internal_token, text)
-            cprint_green(">" * 80)
-            cprint_green(summary)
-            cprint_green("=" * 80)
             summaries.append(summary)
 
         summary_all = self._get_combined_summary(internal_token, summaries)
@@ -314,22 +313,22 @@ class DocumentRepo(DbConnectBase):
         summary_vector: List[float] = []
 
         try:
-            if item.content_type in ["text/markdown", "text/plain"] is False:
-                unstructured_docs = self._document_parser.call_unstructured_api(
-                    document_id=item.doc_id,
-                    file_bytes=data,
-                    content_type=item.content_type,
-                )
-                doc_results = self._document_parser.simple_parse(
-                    unstructured_docs, split_length=2000
-                )
-            else:
+            if item.content_type in ["text/markdown", "text/plain"]:
                 unstructured_docs = [
                     {
                         "text": t,
                     }
                     for t in data.decode("utf-8").split("\n")
                 ]
+                doc_results = self._document_parser.simple_parse(
+                    unstructured_docs, split_length=2000
+                )
+            else:
+                unstructured_docs = self._document_parser.call_unstructured_api(
+                    document_id=item.doc_id,
+                    file_bytes=data,
+                    content_type=item.content_type,
+                )
                 doc_results = self._document_parser.simple_parse(
                     unstructured_docs, split_length=2000
                 )

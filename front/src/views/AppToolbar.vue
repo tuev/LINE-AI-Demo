@@ -103,6 +103,9 @@ const onCopyIdToken = () => {
 
                     <v-card-actions>
                         <v-progress-circular v-if="internalTokenTimestamp.loading" indeterminate />
+                        <span v-if="internalTokenTimestamp.hasError" class="ms-5 text-caption">
+                            Error: {{ internalTokenTimestamp.err }}
+                        </span>
                         <span v-if="internalTokenTimestamp.hasData" class="ms-5 text-caption">
                             Current Token:
                             {{ tokenTimestampFmt(internalTokenTimestamp.value as Date) }}

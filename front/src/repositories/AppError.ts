@@ -12,9 +12,14 @@ export class AppError<T> {
             return new AppError(err, 'Server Internal Error');
         }
         const {detail} = err.response.data as {detail: {loc: any; msg: string}[]};
-        return new AppError(
-            err,
-            detail?.map(d => d.msg).join('.') || String(JSON.stringify(err.response.data))
-        );
+        let message = '';
+        if (typeof detail == 'string') {
+            message = detail;
+        } else if (typeof detail == 'object' && detail.length) {
+            message = detail?.map(d => d.msg).join('.');
+        } else {
+            message = String(err.response.data);
+        }
+        return new AppError(err, message);
     }
 }
