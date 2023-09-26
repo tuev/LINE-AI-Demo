@@ -1,9 +1,9 @@
 from enum import Enum
-import json
-from typing import Any, Generator, List, Optional
-from fastapi import HTTPException, status
+from typing import List, Optional
+from fastapi import status
 from langchain.schema import BaseMessage
 from pydantic import BaseModel
+from langchain.embeddings import OpenAIEmbeddings
 
 
 import requests
@@ -51,99 +51,8 @@ class ChatModelEnum(str, Enum):
 
 
 class LLMFacade:
-    def __init__(self, endpoint: str) -> None:
-        self.endpoint = endpoint
-
-    @staticmethod
-    def _make_prompt_request_body_local_llm(prompt: str):
-        # TODO: Move these configuration to env
-        return json.dumps(
-            {
-                "stream": True,  # Always streaming for now
-                "n_predict": 500,
-                "temperature": 0,
-                "stop": ["</s>"],
-                "repeat_last_n": 256,
-                "repeat_penalty": 1.18,
-                "top_k": 40,
-                "top_p": 0.5,
-                "tfs_z": 1,
-                "typical_p": 1,
-                "presence_penalty": 0,
-                "frequency_penalty": 0,
-                "mirostat": 0,
-                "mirostat_tau": 5,
-                "mirostat_eta": 0.1,
-                "grammar": "",
-                "n_probs": 0,
-                "prompt": prompt,
-            }
-        )
-
-    def _handle_stream_response(self, resp: requests.Response):
-        content = ""
-        try:
-            for line in resp.iter_lines():
-                if line:
-                    try:
-                        data_str = line.decode("utf-8").split("data: ")[1]
-                        print(">>>", data_str)
-                        value = json.loads(data_str)
-                        if value.get("stop", True) is True:
-                            value["final_content"] = content
-                            usage = LLMUsage.parse_obj(value)
-                            final_content = LLMFinalContent(
-                                stop=True,
-                                final_content=content,
-                                usage=usage,
-                                err=None,
-                            )
-                            yield final_content
-                        else:
-                            llm_content = LLMStreamContent.parse_obj(value)
-                            content += llm_content.content
-                            yield llm_content
-
-                    except Exception as e:
-                        print("LLM completion ERR processing stream", line)
-                        raise e
-
-        except requests.exceptions.Timeout:
-            final_content = LLMFinalContent(
-                stop=True,
-                final_content=content,
-                usage=None,
-                err="timeout",
-            )
-            yield final_content
-
-    def completion_local_llm(
-        self, prompt: str
-    ) -> Generator[LLMFinalContent | LLMStreamContent, Any, None]:
-        data = self._make_prompt_request_body_local_llm(prompt)
-        resp = requests.post(
-            f"{self.endpoint}/completion",
-            data=data,
-            stream=True,
-            timeout=60,  # TODO: Move timeout to env
-        )
-        return self._handle_stream_response(resp)
-
-    def _handle_chunk_response(
-        self, resp: requests.Response
-    ) -> Generator[LLMFinalContent | LLMStreamContent, Any, None]:
-        if resp.status_code != 200:
-            print("internal_chat ERR >>", resp.text)
-            raise Exception("error _handle_chunk_response")
-
-        content = ""
-        for chunk in resp.iter_content(chunk_size=128):
-            content += chunk.decode("utf-8")
-            yield LLMStreamContent(stop=False, content=chunk)
-
-        yield LLMFinalContent(stop=True, final_content=content, usage=None, err=None)
-
-        return None
+    def __init__(self, openai_key: str) -> None:
+        self._embeddings = OpenAIEmbeddings(openai_api_key=openai_key)
 
     def _make_line_internal_chat_request(
         self,
@@ -200,26 +109,8 @@ class LLMFacade:
         )
         return resp.text
 
-    def internal_chat_stream(
-        self,
-        messages: List[BaseMessage],
-        model: ChatModelEnum,
-        cookie: str,
-    ) -> Generator[LLMFinalContent | LLMStreamContent, Any, None]:
-        resp = self._make_line_internal_chat_request(
-            messages,
-            model,
-            cookie,
-            stream=True,
-        )
-        try:
-            return self._handle_chunk_response(resp)
-        except Exception as e:
-            print(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="error from internal chat",
-            )
+    def openai_embeddings(self, text: str) -> List[float]:
+        return self._embeddings.embed_query(text)
 
     def healthcheck_line_embedding(self) -> bool:
         resp = requests.get(

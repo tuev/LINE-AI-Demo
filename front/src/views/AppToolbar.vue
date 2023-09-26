@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+    getIDToken,
     getInternalTokenTimestamp,
     internalTokenTimestamp,
     liffProfile,
@@ -37,6 +38,11 @@ const onMenuUpdate = (open: boolean) => {
     if (!open) return;
     getInternalTokenTimestamp();
 };
+
+const onCopyIdToken = () => {
+    const idToken = getIDToken();
+    navigator.clipboard.writeText(idToken || '<empty_id_token>');
+};
 </script>
 
 <template>
@@ -72,6 +78,9 @@ const onMenuUpdate = (open: boolean) => {
                 <v-list-item @click="setInternalTokenModal = true">
                     <v-list-item-title>Set Internal Token</v-list-item-title>
                 </v-list-item>
+                <v-list-item @click="onCopyIdToken">
+                    <v-list-item-title>Copy Id Token</v-list-item-title>
+                </v-list-item>
                 <v-list-item @click="onLogout">
                     <v-list-item-title>Logout</v-list-item-title>
                 </v-list-item>
@@ -95,7 +104,8 @@ const onMenuUpdate = (open: boolean) => {
                     <v-card-actions>
                         <v-progress-circular v-if="internalTokenTimestamp.loading" indeterminate />
                         <span v-if="internalTokenTimestamp.hasData" class="ms-5 text-caption">
-                            Current Token: {{ tokenTimestampFmt(internalTokenTimestamp.value as Date) }}
+                            Current Token:
+                            {{ tokenTimestampFmt(internalTokenTimestamp.value as Date) }}
                         </span>
                         <v-spacer></v-spacer>
 

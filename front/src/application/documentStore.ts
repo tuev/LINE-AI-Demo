@@ -11,12 +11,76 @@ export const uploadFileResult = ref(new Result<string, null>(null));
 export const uploadFile = async (namespace: string, file: File) => {
     uploadFileResult.value.setLoading();
     await pipe(
-        documentRepo.upload(namespace, file),
+        documentRepo.uploadFile(namespace, file),
         TE.fold(
             err => T.of(uploadFileResult.value.setError(err.msg)),
             () => {
                 listMyDocuments();
                 return T.of(uploadFileResult.value.setValue(null));
+            }
+        )
+    )();
+};
+
+export const uploadLandpressResult = ref(new Result<string, null>(null));
+
+export const uploadLandpress = async (namespace: string, url: string) => {
+    uploadLandpressResult.value.setLoading();
+    await pipe(
+        documentRepo.uploadLandpress(namespace, url),
+        TE.fold(
+            err => T.of(uploadLandpressResult.value.setError(err.msg)),
+            () => {
+                listMyDocuments();
+                return T.of(uploadLandpressResult.value.setValue(null));
+            }
+        )
+    )();
+};
+
+export const uploadTextResult = ref(new Result<string, null>(null));
+
+export const uploadText = async (namespace: string, title: string, text: string) => {
+    uploadTextResult.value.setLoading();
+    await pipe(
+        documentRepo.uploadText(namespace, title, text),
+        TE.fold(
+            err => T.of(uploadTextResult.value.setError(err.msg)),
+            () => {
+                listMyDocuments();
+                return T.of(uploadTextResult.value.setValue(null));
+            }
+        )
+    )();
+};
+
+export const parseHtmlResult = ref(new Result<string, string | null>(null));
+
+export const parseHtml = async (html: string) => {
+    parseHtmlResult.value.reset();
+    parseHtmlResult.value.setLoading();
+    await pipe(
+        documentRepo.parseHtml(html),
+        TE.fold(
+            err => T.of(parseHtmlResult.value.setError(err.msg)),
+            res => {
+                return T.of(parseHtmlResult.value.setValue(res));
+            }
+        )
+    )();
+};
+
+export const processDocumentResult = ref(new Result<string, null>(null));
+
+export const processDocument = async (docId: string) => {
+    processDocumentResult.value.setLoading();
+    await pipe(
+        documentRepo.processDocument(docId),
+        TE.fold(
+            err => T.of(processDocumentResult.value.setError(err.msg)),
+            () => {
+                listMyDocuments();
+                return T.of(processDocumentResult.value.setValue(null));
             }
         )
     )();
@@ -56,7 +120,7 @@ export const deleteDocument = async (docId: string) => {
 export const queryPublicDocumentsResult = ref(new Result<string, DocumentWithSimilarity[]>([]));
 
 export const queryPublicDocuments = async (namespace: string, query: string) => {
-    queryPublicDocumentsResult.value.reset()
+    queryPublicDocumentsResult.value.reset();
     queryPublicDocumentsResult.value.setLoading();
     await pipe(
         documentRepo.queryPublicDocuments(namespace, query),

@@ -8,13 +8,13 @@ services:
             - LOCAL=1
             - PORT=8080
             - LIFF_CLIENT_ID=2000615876
-            - LLM_ENDPOINT=http://host.docker.internal:8080
             - UNSTRUCTURED_ENDPOINT=http://unstructured:8000
-            - SUPPORT_TYPES=application/pdf,text/html
+            - SUPPORT_TYPES=application/pdf,text/html,text/markdown
             - S3_ENDPOINT=${S3_ENDPOINT}
             - S3_ACCESS_KEY=${S3_ACCESS_KEY}
             - S3_SECRET_KEY=${S3_SECRET_KEY}
             - S3_REGION=${S3_REGION}
+            - OPENAI_KEY=${OPENAI_KEY}
         ports:
             - 8081:8080
         command: "sh -c 'sleep infinity'"

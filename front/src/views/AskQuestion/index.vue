@@ -61,7 +61,7 @@ const onAnswer = () => {
                     v-model:selected="selectedDocuments"
                 />
             </v-col>
-            <v-col cols="3">
+            <v-col v-if="queryPublicDocumentsResult.hasData" cols="3">
                 <v-btn
                     variant="flat"
                     color="primary"

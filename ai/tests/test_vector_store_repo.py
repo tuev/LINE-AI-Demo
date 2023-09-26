@@ -23,7 +23,7 @@ def insert_sample_vectors(vector_store: VectorStoreRepo):
     vector_embeddings: List[List[float]] = []
     vector_metadatas: List[dict] = []
     for text in texts:
-        vector_embeddings.append(llm_facade.line_embeddings(text))
+        vector_embeddings.append(llm_facade.openai_embeddings(text))
         vector_metadatas.append({"text": text})
 
     vector_store.insert_vectors(
@@ -36,7 +36,7 @@ def insert_sample_vectors(vector_store: VectorStoreRepo):
 
 @pytest.fixture
 def initialize_vector_store():
-    vector_store = VectorStoreRepo("vector_store_test", 768)
+    vector_store = VectorStoreRepo("vector_store_test", 1536)
     insert_sample_vectors(vector_store)
     yield vector_store
     vector_store._drop_table()
@@ -48,7 +48,7 @@ def test_vector_store(initialize_vector_store):
     if isinstance(vector_store, VectorStoreRepo) is False:
         raise Exception("failed initialize_vector_store")
 
-    search_vector = llm_facade.line_embeddings(
+    search_vector = llm_facade.openai_embeddings(
         "Athens is a beautiful city. I have been studying Math there for one year and I find it to be very challenging."  # noqa: E501
     )
     results = vector_store.similarity_search_by_namespace(

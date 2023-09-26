@@ -1,5 +1,6 @@
 import re
 from typing import Any, List
+import trafilatura
 
 import requests
 from pydantic import BaseModel
@@ -35,14 +36,15 @@ class DocumentParser:
             print(r.text)
             raise e
 
-    def simple_parse(self, unstructured_docs: List[Any]) -> List[DocumentParseResult]:
+    def html_to_text(self, html: str):
+        return trafilatura.extract(html)
+
+    def simple_parse(
+        self, unstructured_docs: List[dict], split_length
+    ) -> List[DocumentParseResult]:
         docs: List[DocumentParseResult] = []
         for d in unstructured_docs:
             content = d.get("text", "")
-
-            # Filter base64 encoding texts
-            if " " not in content:
-                continue
 
             content = content.replace("\t", " ")
             content = re.sub(
@@ -62,7 +64,7 @@ class DocumentParser:
 
             # Handling next doc condition
             last_page = docs[-1]
-            if len(last_page.text) > 2000:
+            if len(last_page.text) > split_length:
                 # Add overlap
                 overlap_words_amount = 100
                 previous_text = ""
@@ -82,5 +84,10 @@ class DocumentParser:
 
             # Just add content to text
             docs[-1].text += "\n\n" + content
+
+        # Handle when last doc has small length, We will add it to the previous doc
+        if len(docs) > 2 and len(docs[-1].text) < split_length / 2:
+            docs[-2].text += docs[-1].text
+            docs = docs[:-2]
 
         return docs

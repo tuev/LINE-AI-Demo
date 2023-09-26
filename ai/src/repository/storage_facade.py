@@ -15,8 +15,6 @@ class StorageFacade:
         part_size: int,
         metadata: dict | None = None,
     ):
-        # TODO: Move to configuration
-
         return self._client.put_object(
             bucket_name=self._bucket_name,
             object_name=object_name,

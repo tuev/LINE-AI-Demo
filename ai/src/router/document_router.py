@@ -1,3 +1,4 @@
+import io
 import os
 import tempfile
 from typing import Annotated, List
@@ -15,9 +16,13 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 
-from repository import document_repo, auth_repo
+from repository import document_download, document_parser, document_repo, auth_repo
 from repository.auth_repo import LineUserInfo, check_token_expired
-from repository.document_repo import DocumentVisibilityEnum
+from repository.document_repo import (
+    DocumentMetadata,
+    DocumentSourceTypeEnum,
+    DocumentVisibilityEnum,
+)
 
 document_router = APIRouter(prefix="/document")
 
@@ -30,8 +35,8 @@ class UploadDocument(BaseModel):
     file: str
 
 
-@document_router.post("/upload")
-def upload(
+@document_router.post("/upload/file")
+def upload_file(
     user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
     file: Annotated[
         UploadFile,
@@ -89,6 +94,11 @@ def upload(
         bytesize=file.size or -1,
         upload_by=user.sub,
         visibility=visibility,
+        metadata=DocumentMetadata(
+            source_type=DocumentSourceTypeEnum.UploadFile,
+            source_link=filename,
+            source_metadata={},
+        ),
     )
 
     background_task.add_task(
@@ -98,6 +108,132 @@ def upload(
     )
 
     return doc_id
+
+
+class UploadText(BaseModel):
+    namespace: str
+    title: str
+    text: str
+    visibility: DocumentVisibilityEnum
+
+
+@document_router.post("/upload/text")
+def upload_text(
+    user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
+    body: UploadText,
+    background_task: BackgroundTasks,
+):
+    if len(body.text) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="must have title"
+        )
+
+    min_body = 300
+
+    if len(body.text) < min_body:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"body is too small. must have more than {min_body} characters",
+        )
+
+    internal_token = auth_repo.get_token(user.sub)
+    internal_token = check_token_expired(internal_token)
+
+    text_encode = body.text.encode(encoding="utf-8")
+
+    doc_id = document_repo.create(
+        namespace=body.namespace,
+        filename=body.title,
+        content_type="text/plain",
+        blob=io.BytesIO(text_encode),
+        bytesize=len(text_encode),
+        upload_by=user.sub,
+        visibility=body.visibility,
+        metadata=DocumentMetadata(
+            source_type=DocumentSourceTypeEnum.UploadText,
+            source_link="",
+            source_metadata={},
+        ),
+    )
+
+    background_task.add_task(
+        document_repo.process_vector_and_summary,
+        internal_token=internal_token.token,
+        doc_id=doc_id,
+    )
+
+    return doc_id
+
+
+class UploadLandpress(BaseModel):
+    namespace: str
+    visibility: DocumentVisibilityEnum
+    url: str
+
+
+@document_router.post("/upload/landpress")
+def upload_landpress(
+    user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
+    body: UploadLandpress,
+    background_task: BackgroundTasks,
+):
+    doc = document_download.landpress_or_none(body.url)
+    if doc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+
+
+    min_body = 300
+
+    if len(doc.body) < min_body:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"body is too small. must have more than {min_body} characters"
+        )
+
+    internal_token = auth_repo.get_token(user.sub)
+    internal_token = check_token_expired(internal_token)
+
+    text_encode = doc.body.encode(encoding="utf-8")
+
+    doc_id = document_repo.create(
+        namespace=body.namespace,
+        filename=doc.title,
+        content_type="text/markdown",
+        blob=io.BytesIO(text_encode),
+        bytesize=len(text_encode),
+        upload_by=user.sub,
+        visibility=body.visibility,
+        metadata=DocumentMetadata(
+            source_type=DocumentSourceTypeEnum.Landpress,
+            source_link=body.url,
+            source_metadata=dict(
+                create_by=doc.create_by,
+                create_at=doc.create_at,
+                update_at=doc.update_at,
+            ),
+        ),
+    )
+
+    background_task.add_task(
+        document_repo.process_vector_and_summary,
+        internal_token=internal_token.token,
+        doc_id=doc_id,
+    )
+
+    return doc_id
+
+
+class ParseHtmlPage(BaseModel):
+    html: str
+
+
+@document_router.post("/parse/html_page")
+def parse_html_page(
+    _: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
+    body: ParseHtmlPage,
+):
+    text = document_parser.html_to_text(body.html)
+    return text
 
 
 def remove_temp_file(path: str):

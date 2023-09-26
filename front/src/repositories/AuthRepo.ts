@@ -3,12 +3,13 @@ import {AxiosInstance} from 'axios';
 import {AppError} from './AppError';
 
 export class AuthRepo {
+    private prefix: string = '/auth';
     constructor(private client: AxiosInstance) {}
 
     setInternalToken(token: string) {
         return TE.tryCatch(
             async () => {
-                const {data} = await this.client.post(`/auth/set_internal_token`, {
+                const {data} = await this.client.post(`${this.prefix}/set_internal_token`, {
                     token,
                 });
                 return data;
@@ -20,7 +21,9 @@ export class AuthRepo {
     getInternalTokenTimestamp() {
         return TE.tryCatch(
             async () => {
-                const {data} = await this.client.get<string>(`/auth/internal_token_timestamp`);
+                const {data} = await this.client.get<string>(
+                    `${this.prefix}/internal_token_timestamp`
+                );
                 return new Date(data);
             },
             (err: any) => AppError.fromAxiosError(err)
