@@ -6,27 +6,6 @@ In the future, we aim to apply this setup to better Hardware and Backend infrast
 
 # Development
 
-## Install llama.cpp
-
-[https://github.com/ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp)
-
-Recommend system: Macbook Metal ie: M1, M2 chips
-
-NOTE: Not working with Intel + AMD chips. You need to tinker the setup yourself. I found it really hard to get the AMD working.
-
-## Download the LLM Model
-
-Currently, I'm trying with Code LLAMA. But your are free to try new models. Just need to point the server to the downloaded model.
-
-Recommend link: [https://huggingface.co/TheBloke/CodeLlama-13B-Instruct-GGUF](https://huggingface.co/TheBloke/CodeLlama-13B-Instruct-GGUF)
-
-## Run the LLM
-
-```bash
-cd llama.cpp
-./server -m <path_to_model>/codellama-13b-instruct.Q5_K_M.gguf -ngl 32
-```
-
 ## Build and run with docker compose
 
 ```bash
@@ -35,7 +14,7 @@ docker compose up -d --build
 
 If already built. Just need:
 
-```base
+```bash
 docker compose up -d
 ```
 
@@ -43,13 +22,15 @@ docker compose up -d
 
 ### Create Vector plugin
 
+The image we use already support vectors. But we need to activate it using the SQL below.
+
 ```SQL
 CREATE EXTENSION vector;
 ```
 
 ## Frontend
 
-Built with sveltekit. And deployed to Cloudflare Page.
+Built with Vue and Vuetify. And deployed to Cloudflare Page.
 
 More information inside the [front/README.md](/front/README.md)
 
@@ -59,13 +40,17 @@ More information inside the [front/README.md](/front/README.md)
 
 Create new access and secret key for S3 and setup it in .env file.
 
+Create new bucket with name `lvn-ai-demo`
+
 Example:
 
 ```
+LIFF_CLIENT_ID=
 S3_ENDPOINT=minio:9000
 S3_ACCESS_KEY=
 S3_SECRET_KEY=
 S3_REGION=local
+OPENAI_KEY=
 ```
 
 # License
