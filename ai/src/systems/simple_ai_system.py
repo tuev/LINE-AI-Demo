@@ -6,7 +6,11 @@ from pydantic import BaseModel
 from repository.document_repo import Document, DocumentRepo
 from repository.helpers import cprint_cyan, cprint_green, get_timestamp, messages_to_str
 from repository.llm_facade import ChatModelEnum, LLMFacade
-from repository.vector_store_repo import VectorQueryResult, VectorStoreRepo
+from repository.vector_store_repo import (
+    VectorMetadata,
+    VectorQueryResult,
+    VectorStoreRepo,
+)
 
 from systems.base_ai_ystem import BaseAISystem
 
@@ -17,7 +21,7 @@ class ExtractResultReference(BaseModel):
     namespace: str
     doc_id: str
     filename: str
-    metadata: dict
+    metadata: VectorMetadata
     similarity: float
     upload_by: str
     upload_at: datetime
@@ -64,7 +68,7 @@ class SimpleAISystem:
     ) -> List[ExtractResultReference]:
         doc_ids = [r.document for r in references]
         docs = {}
-        for d in self._document_repo.get_docs_or_not_found(doc_ids):
+        for d in self._document_repo.get_docs_or_raise_not_found(doc_ids):
             docs[d.doc_id] = d
 
         return [
@@ -83,7 +87,7 @@ class SimpleAISystem:
         information_str = ""
         for r in result_references:
             title = r.filename
-            content = r.metadata.get("content", "")
+            content = r.metadata.content
             information_str += "\n---\n" + f"# Document: {title}\n\n{content}\n"
 
         messages_prompt = self._extract_prompt.format_prompt(

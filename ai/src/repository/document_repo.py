@@ -1,8 +1,9 @@
 import json
+import multiprocessing
 import traceback
 from datetime import datetime
 from enum import Enum
-from typing import Any, BinaryIO, List, Tuple
+from typing import BinaryIO, List, Tuple
 from uuid import uuid4
 
 import numpy as np
@@ -26,7 +27,7 @@ from repository.document_parser import DocumentParser
 from repository.helpers import cprint_cyan, cprint_green, get_timestamp, messages_to_str
 from repository.llm_facade import ChatModelEnum, LLMFacade
 from repository.storage_facade import StorageFacade
-from repository.vector_store_repo import VectorStoreRepo
+from repository.vector_store_repo import VectorMetadata, VectorStoreRepo
 
 
 class DocumentDB(BaseDBModel):
@@ -104,10 +105,6 @@ class Document(BaseModel):
 
     @staticmethod
     def from_db(db_document: DocumentDB):
-        upload_at: Any = db_document.upload_at
-        metadata = DocumentMetadata.parse_obj(
-            json.loads(from_str(db_document.metadata))
-        )
         return Document(
             namespace=from_str(db_document.namespace),
             doc_id=from_str(db_document.doc_id),
@@ -115,11 +112,13 @@ class Document(BaseModel):
             content_type=from_str(db_document.content_type),
             bytesize=from_int(db_document.bytesize),
             upload_by=from_str(db_document.upload_by),
-            upload_at=from_datetime(upload_at),
+            upload_at=from_datetime(db_document.upload_at),
             summary=from_str(db_document.summary),
             process_status=DocumentProcessStatusEnum(db_document.process_status),
             visibility=DocumentVisibilityEnum(db_document.visibility),
-            metadata=metadata,
+            metadata=DocumentMetadata.parse_obj(
+                json.loads(from_str(db_document.metadata))
+            ),
         )
 
 
@@ -176,7 +175,7 @@ class DocumentRepo(DbConnectBase):
 
         return item
 
-    def get_docs_or_not_found(self, ids: List[str]) -> List[Document]:
+    def get_docs_or_raise_not_found(self, ids: List[str]) -> List[Document]:
         items = DocumentDB.select().where(DocumentDB.doc_id.in_(ids))
         if len(items) == 0:
             raise HTTPException(
@@ -232,8 +231,13 @@ class DocumentRepo(DbConnectBase):
 
     def _get_document_embbedings(self, doc_results: List[str]) -> List[List[float]]:
         doc_embeddings: List[List[float]] = []
-        for doc in doc_results:
-            doc_embeddings.append(self._llm.openai_embeddings(doc))
+        with multiprocessing.Pool(processes=5) as pool:
+            workers = [
+                pool.apply_async(self._llm.openai_embeddings, (doc,))
+                for doc in doc_results
+            ]
+            for result in workers:
+                doc_embeddings.append(result.get())
 
         return doc_embeddings
 
@@ -309,10 +313,7 @@ class DocumentRepo(DbConnectBase):
         try:
             if item.content_type in ["text/markdown", "text/plain"]:
                 unstructured_docs = [
-                    {
-                        "text": t,
-                    }
-                    for t in data.decode("utf-8").split("\n")
+                    {"text": t} for t in data.decode("utf-8").split("\n")
                 ]
                 doc_results = self._document_parser.simple_parse(
                     unstructured_docs, split_length=2000
@@ -347,7 +348,13 @@ class DocumentRepo(DbConnectBase):
                 document=item.doc_id,
                 vectors=doc_embeddings,
                 metadatas=list(
-                    map(lambda d: {"content": d.text, **d.metadata}, doc_results)
+                    map(
+                        lambda d: VectorMetadata(
+                            content=d.text,
+                            page_number=d.metadata.get("page_number", 0),
+                        ),
+                        doc_results,
+                    )
                 ),
             )
             process_status = DocumentProcessStatusEnum.Processed

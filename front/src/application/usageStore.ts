@@ -3,22 +3,51 @@ import * as T from 'fp-ts/lib/Task';
 import {Result} from '@/domain/Result';
 import {pipe} from 'fp-ts/lib/function';
 import {ref} from 'vue';
+import {usageRepo} from '@/repositories';
+import {Usage, UsageType} from '@/domain/Usage';
 
-export const last10Usage = ref(new Result<string, any[]>([]));
+export const listUsageByTimestampResult = ref(new Result<string, Usage[]>([]));
 
-export const getUsage = async () => {
-    last10Usage.value.setLoading();
+export const listUsageByTimestamp = async (skip: number, limit: number) => {
+    listUsageByTimestampResult.value.setLoading();
     await pipe(
         //
-        TE.tryCatch(
-            async () => [] as any[],
-            () => {
-                return 'hi';
-            }
-        ),
+        usageRepo.listByTimestamp(skip, limit),
         TE.fold(
-            err => T.of(last10Usage.value.setError(err)),
-            res => T.of(last10Usage.value.setValue(res))
+            err => T.of(listUsageByTimestampResult.value.setError(err.msg)),
+            res => T.of(listUsageByTimestampResult.value.setValue(res))
+        )
+    )();
+};
+
+export const recordUsageResult = ref(new Result<string, null>(null));
+
+export const recordUsage = async (
+    query: string,
+    result: string,
+    usageType: UsageType,
+    usageData: object
+) => {
+    recordUsageResult.value.setLoading();
+    await pipe(
+        usageRepo.record(query, result, usageType, usageData),
+        TE.fold(
+            err => T.of(recordUsageResult.value.setError(err.msg)),
+            res => T.of(recordUsageResult.value.setValue(res))
+        )
+    )();
+};
+
+export const deleteUsageResult = ref(new Result<string, null>(null));
+
+export const deleteUsage = async (usageId: string) => {
+    deleteUsageResult.value.setLoading();
+    await pipe(
+        //
+        usageRepo.delete(usageId),
+        TE.fold(
+            err => T.of(deleteUsageResult.value.setError(err.msg)),
+            res => T.of(deleteUsageResult.value.setValue(res))
         )
     )();
 };

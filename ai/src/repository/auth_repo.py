@@ -8,7 +8,7 @@ import requests
 from pydantic import BaseModel
 
 from repository.base_db import BaseDBModel, from_datetime, from_str, get_db
-from repository.helpers import get_timestamp
+from repository.helpers import cprint_warn, get_timestamp
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -81,24 +81,36 @@ class AuthRepo:
         return response.text
 
     def verify_id_token(self, id_token: str):
-        response = requests.post(
-            "https://api.line.me/oauth2/v2.1/verify",
-            data={
-                "id_token": id_token,
-                "client_id": self.client_id,
-            },
-        )
+        try:
+            response = requests.post(
+                "https://api.line.me/oauth2/v2.1/verify",
+                data={
+                    "id_token": id_token,
+                    "client_id": self.client_id,
+                },
+            )
+
+        except Exception as e:
+            print(">>> ERR connect to auth server", e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="unable to connect to auth server",
+            )
+
         resp_obj = response.json()
         resp_err = resp_obj.get("error")
         if resp_err is not None:
+            cprint_warn(f"unauthorized {str(resp_obj)}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=resp_obj
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="cannot verify id_token",
             )
 
         try:
-            user = LineUserInfo.parse_raw(response.text)
+            user = LineUserInfo.parse_obj(resp_obj)
+
         except Exception as e:
-            print(">>> ERR verify_id_token", response.text, e)
+            print(">>> ERR parsing LineUserInfo", e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="unable to parse LineUserInfo",
@@ -112,22 +124,10 @@ class AuthRepo:
 
         return user
 
-    async def get_current_user(self, token: Annotated[str, Depends(oauth2_scheme)]):
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"Authorization": "Bearer"},
-        )
-        try:
-            user = self.verify_id_token(token)
-        except Exception as e:
-            print("failed verify line token", e)
-            raise credentials_exception
-
-        if user is None:
-            raise credentials_exception
-
-        return user
+    async def get_current_user(
+        self, token: Annotated[str, Depends(oauth2_scheme)]
+    ) -> LineUserInfo:
+        return self.verify_id_token(token)
 
     def set_internal_token(self, user_id: str, token: str):
         token_splits = token.split("|")
