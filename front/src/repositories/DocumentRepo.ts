@@ -5,6 +5,7 @@ import {Document, DocumentWithSimilarity} from '@/domain/Document';
 
 export class DocumentRepo {
     private prefix: string = '/document';
+    private uploadTimeout = 60_000;
 
     constructor(private client: AxiosInstance) {}
 
@@ -14,7 +15,13 @@ export class DocumentRepo {
         formData.append('visibility', 'public');
         formData.append('file', file);
         return TE.tryCatch(
-            () => this.client.post(`${this.prefix}/upload/file`, formData),
+            () =>
+                this.client.post(
+                    //
+                    `${this.prefix}/upload/file`,
+                    formData,
+                    {timeout: this.uploadTimeout}
+                ),
             (err: any) => AppError.fromAxiosError(err)
         );
     }
@@ -22,11 +29,15 @@ export class DocumentRepo {
     uploadLandpress(namespace: string, url: string) {
         return TE.tryCatch(
             () =>
-                this.client.post(`${this.prefix}/upload/landpress`, {
-                    namespace,
-                    url,
-                    visibility: 'public',
-                }),
+                this.client.post(
+                    `${this.prefix}/upload/landpress`,
+                    {
+                        namespace,
+                        url,
+                        visibility: 'public',
+                    },
+                    {timeout: this.uploadTimeout}
+                ),
             (err: any) => AppError.fromAxiosError(err)
         );
     }
@@ -34,12 +45,16 @@ export class DocumentRepo {
     uploadText(namespace: string, title: string, text: string) {
         return TE.tryCatch(
             () =>
-                this.client.post(`${this.prefix}/upload/text`, {
-                    namespace,
-                    title,
-                    text,
-                    visibility: 'public',
-                }),
+                this.client.post(
+                    `${this.prefix}/upload/text`,
+                    {
+                        namespace,
+                        title,
+                        text,
+                        visibility: 'public',
+                    },
+                    {timeout: this.uploadTimeout}
+                ),
             (err: any) => AppError.fromAxiosError(err)
         );
     }
@@ -47,9 +62,11 @@ export class DocumentRepo {
     parseHtml(html: string) {
         return TE.tryCatch(
             async () => {
-                const {data} = await this.client.post<string>(`${this.prefix}/parse/html_page`, {
-                    html,
-                });
+                const {data} = await this.client.post<string>(
+                    //
+                    `${this.prefix}/parse/html_page`,
+                    {html}
+                );
                 return data;
             },
             (err: any) => AppError.fromAxiosError(err)

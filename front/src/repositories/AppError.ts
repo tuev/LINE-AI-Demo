@@ -9,7 +9,7 @@ export class AppError<T> {
     static fromAxiosError(err: AxiosError) {
         if (!err.response?.data) {
             console.error(err);
-            return new AppError(err, 'Server Internal Error');
+            return new AppError(err, err.message || 'Server Internal Error');
         }
         const {detail} = err.response.data as {detail: {loc: any; msg: string}[]};
         let message = '';

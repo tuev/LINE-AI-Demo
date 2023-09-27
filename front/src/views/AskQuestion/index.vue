@@ -8,7 +8,7 @@ import AnswerReferences from './AnswerReferences.vue';
 import Paragraphs from '../components/Paragraphs.vue';
 
 const namespace = ref('test');
-const question = ref('What is Apple income in 2023?');
+const question = ref('Thủ tục đăng ký bảo hiểm cho nhân viên LINE như thế nào?');
 const selectedDocuments = ref<string[]>([]);
 
 const onSearch = async () => {

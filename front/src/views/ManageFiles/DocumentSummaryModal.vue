@@ -2,8 +2,9 @@
 import {computed} from 'vue';
 import Paragraphs from '@/views/components/Paragraphs.vue';
 import {processDocumentResult} from '@/application/documentStore';
+import {Document} from '@/domain/Document';
 
-const props = defineProps<{modelValue: boolean; summary: string}>();
+const props = defineProps<{modelValue: boolean; document: Document}>();
 const emit = defineEmits<{
     (event: 'update:modelValue', value: boolean): void;
     (event: 'process'): void;
@@ -23,7 +24,7 @@ const localValue = computed({
     <v-dialog width="80vw" v-model="localValue">
         <v-card>
             <v-card-text>
-                <Paragraphs :text="props.summary" />
+                <Paragraphs :text="props.document.summary" />
             </v-card-text>
 
             <v-card-actions>
@@ -33,12 +34,15 @@ const localValue = computed({
                 <v-spacer></v-spacer>
 
                 <v-btn
+                    @click="$emit('process')"
+                    :disabled="
+                        props.document.process_status === 'processing' ||
+                        processDocumentResult.loading
+                    "
+                    :loading="processDocumentResult.loading"
                     color="primary"
                     variant="flat"
                     text="Re-process"
-                    :disabled="processDocumentResult.loading"
-                    :loading="processDocumentResult.loading"
-                    @click="$emit('process')"
                 ></v-btn>
                 <v-btn text="Back" @click="localValue = false"></v-btn>
             </v-card-actions>

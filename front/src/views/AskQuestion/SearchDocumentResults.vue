@@ -41,9 +41,7 @@ const onToggleSelected = (docId: string) => {
                         <span class="text-black">{{ doc.filename }}</span>
                     </template>
                 </v-checkbox>
-                <span class="text-caption">
-                    Relevant: {{ similarityFormat(doc.similarity * 100) }}
-                </span>
+                <span class="text-caption"> Relevant: {{ similarityFormat(doc.similarity) }} </span>
                 <template v-slot:actions>
                     <v-btn size="small" variant="plain" icon @click="onToggleExpansion(doc.doc_id)">
                         <v-icon icon="mdi-chevron-down"></v-icon>
