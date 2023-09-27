@@ -51,7 +51,7 @@ def upload_file(
     visibility: Annotated[
         DocumentVisibilityEnum, Form(description="Metadata for file")
     ],
-    background_task: BackgroundTasks,
+    background_tasks: BackgroundTasks,
 ):
     filename = file.filename
     content_type = file.content_type
@@ -101,7 +101,7 @@ def upload_file(
         ),
     )
 
-    background_task.add_task(
+    background_tasks.add_task(
         document_repo.process_vector_and_summary,
         internal_token=internal_token.token,
         doc_id=doc_id,
@@ -121,7 +121,7 @@ class UploadText(BaseModel):
 def upload_text(
     user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
     body: UploadText,
-    background_task: BackgroundTasks,
+    background_tasks: BackgroundTasks,
 ):
     if len(body.text) == 0:
         raise HTTPException(
@@ -156,7 +156,7 @@ def upload_text(
         ),
     )
 
-    background_task.add_task(
+    background_tasks.add_task(
         document_repo.process_vector_and_summary,
         internal_token=internal_token.token,
         doc_id=doc_id,
@@ -175,19 +175,18 @@ class UploadLandpress(BaseModel):
 def upload_landpress(
     user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
     body: UploadLandpress,
-    background_task: BackgroundTasks,
+    background_tasks: BackgroundTasks,
 ):
     doc = document_download.landpress_or_none(body.url)
     if doc is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
-
 
     min_body = 300
 
     if len(doc.body) < min_body:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"body is too small. must have more than {min_body} characters"
+            detail=f"body is too small. must have more than {min_body} characters",
         )
 
     internal_token = auth_repo.get_token(user.sub)
@@ -214,7 +213,7 @@ def upload_landpress(
         ),
     )
 
-    background_task.add_task(
+    background_tasks.add_task(
         document_repo.process_vector_and_summary,
         internal_token=internal_token.token,
         doc_id=doc_id,
@@ -241,7 +240,7 @@ def remove_temp_file(path: str):
 
 
 @document_router.get("/get_object/{document_id}")
-def get_object(document_id: str, background_task: BackgroundTasks):
+def get_object(document_id: str, background_tasks: BackgroundTasks):
     doc = document_repo.get_doc_or_not_found(document_id)
     blob = document_repo.get_file_or_not_found(document_id)
 
@@ -256,20 +255,26 @@ def get_object(document_id: str, background_task: BackgroundTasks):
         headers={"Content-Disposition": "inline"},
     )
 
-    background_task.add_task(remove_temp_file, temp_file.name)
+    background_tasks.add_task(remove_temp_file, temp_file.name)
 
     return resp
 
 
-@document_router.post("/do_process/{document_id}")
+@document_router.post("/do_process/{doc_id}")
 def do_process(
     user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
-    document_id: str,
+    doc_id: str,
+    background_tasks: BackgroundTasks,
 ):
     internal_token = auth_repo.get_token(user.sub)
     internal_token = check_token_expired(internal_token)
 
-    document_repo.process_vector_and_summary(internal_token.token, document_id)
+    background_tasks.add_task(
+        document_repo.process_vector_and_summary,
+        internal_token=internal_token.token,
+        doc_id=doc_id,
+    )
+
     return "success"
 
 

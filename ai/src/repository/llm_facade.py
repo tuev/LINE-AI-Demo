@@ -1,41 +1,10 @@
 from enum import Enum
-from typing import List, Optional
-from fastapi import status
-from langchain.schema import BaseMessage
-from pydantic import BaseModel
-from langchain.embeddings import OpenAIEmbeddings
-
+from typing import List
 
 import requests
-
-
-class LLMTimings(BaseModel):
-    predicted_ms: Optional[float]
-    predicted_n: Optional[int]
-    predicted_per_second: Optional[float]
-    predicted_per_token_ms: Optional[float]
-    prompt_ms: Optional[float]
-    prompt_n: Optional[int]
-    prompt_per_second: Optional[float]
-    prompt_per_token_ms: Optional[float]
-
-
-class LLMUsage(BaseModel):
-    timings: LLMTimings
-    tokens_evaluated: Optional[int]
-    tokens_predicted: Optional[int]
-
-
-class LLMFinalContent(BaseModel):
-    stop: bool
-    final_content: str
-    usage: Optional[LLMUsage]
-    err: Optional[str]
-
-
-class LLMStreamContent(BaseModel):
-    stop: bool
-    content: str
+from fastapi import status
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.schema import BaseMessage
 
 
 class ChatModelEnum(str, Enum):

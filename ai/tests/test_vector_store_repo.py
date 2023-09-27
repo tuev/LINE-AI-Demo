@@ -1,7 +1,7 @@
 import pytest
 from typing import List
 from repository import llm_facade
-from repository.vector_store_repo import VectorStoreRepo
+from repository.vector_store_repo import VectorMetadata, VectorStoreRepo
 
 
 def test_always_passes():
@@ -21,10 +21,10 @@ def insert_sample_vectors(vector_store: VectorStoreRepo):
         "Mathematics is a difficult subject.",
     ]
     vector_embeddings: List[List[float]] = []
-    vector_metadatas: List[dict] = []
+    vector_metadatas: List[VectorMetadata] = []
     for text in texts:
         vector_embeddings.append(llm_facade.openai_embeddings(text))
-        vector_metadatas.append({"text": text})
+        vector_metadatas.append(VectorMetadata(content=text, page_number=None))
 
     vector_store.insert_vectors(
         test_store_namespace,
@@ -71,4 +71,4 @@ def test_vector_store(initialize_vector_store):
         if i < len(results) - 2:
             assert result.similarity > results[i + 1].similarity
 
-        assert result.metadata["text"] == expect_texts_order[i]
+        assert result.metadata.content == expect_texts_order[i]

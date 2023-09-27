@@ -1,17 +1,21 @@
-import json
 from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
 
-from repository.helpers import make_chunks
 from repository.db_connect_base import DbConnectBase
+from repository.helpers import make_chunks
+
+
+class VectorMetadata(BaseModel):
+    content: str
+    page_number: Optional[int]
 
 
 class VectorQueryResult(BaseModel):
     namespace: str
     document: str
-    metadata: dict
+    metadata: VectorMetadata
     similarity: float
 
 
@@ -19,7 +23,7 @@ class Vector(BaseModel):
     namespace: str
     document: str
     vector_id: str
-    metadata: dict
+    metadata: VectorMetadata
 
 
 class VectorStoreRepo(DbConnectBase):
@@ -83,7 +87,7 @@ class VectorStoreRepo(DbConnectBase):
         namespace: str,
         document: str,
         vectors: list[list[float]],
-        metadatas: list[dict],
+        metadatas: list[VectorMetadata],
         vector_ids: Optional[list[str]] = None,
     ):
         if len(vectors) != len(metadatas):
@@ -94,7 +98,7 @@ class VectorStoreRepo(DbConnectBase):
 
         _metadatas: list[str] = []
         for m in metadatas:
-            metadata_str = json.dumps(m)
+            metadata_str = m.json()
             if len(metadata_str) > 40000:
                 raise Exception("metadata greater than 40kb")
 
@@ -153,7 +157,7 @@ class VectorStoreRepo(DbConnectBase):
                 namespace=namespace,
                 document=document,
                 vector_id=vector_id,
-                metadata=json.loads(metadata),
+                metadata=VectorMetadata.parse_raw(metadata),
             )
             for (namespace, document, vector_id, metadata) in results
         ]
@@ -193,7 +197,7 @@ class VectorStoreRepo(DbConnectBase):
             VectorQueryResult(
                 namespace=namespace,
                 document=document,
-                metadata=json.loads(metadata),
+                metadata=VectorMetadata.parse_raw(metadata),
                 similarity=similarity,
             )
             for (namespace, document, _, metadata, similarity) in results
@@ -228,7 +232,7 @@ class VectorStoreRepo(DbConnectBase):
             VectorQueryResult(
                 namespace=namespace,
                 document=document,
-                metadata=json.loads(metadata),
+                metadata=VectorMetadata.parse_raw(metadata),
                 similarity=similarity,
             )
             for (namespace, document, _, metadata, similarity) in results

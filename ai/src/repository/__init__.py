@@ -2,19 +2,16 @@ import os
 
 from dotenv import load_dotenv
 from minio import Minio
+from systems.simple_ai_system import SimpleAISystem
 
 from repository.auth_repo import AuthRepo
-from repository.code_repo import CodeRepo
 from repository.document_download import DocumentDownload
 from repository.document_parser import DocumentParser
 from repository.document_repo import DocumentRepo
 from repository.llm_facade import LLMFacade
-from repository.request_record_repo import RequestRecordRepo
 from repository.storage_facade import StorageFacade
 from repository.usage_repo import UsageRepo
 from repository.vector_store_repo import VectorStoreRepo
-from systems.simple_ai_system import SimpleAISystem
-
 
 load_dotenv()
 
@@ -39,9 +36,7 @@ llm_facade = LLMFacade(OPENAI_KEY)
 document_parser = DocumentParser(UNSTRUCTURED_ENDPOINT, SUPPORT_TYPES)
 
 auth_repo = AuthRepo(client_id=LIFF_CLIENT_ID)
-code_repo = CodeRepo(llm=llm_facade)
-usage_repo = UsageRepo()
-request_record_repo = RequestRecordRepo()
+usage_repo = UsageRepo(llm=llm_facade)
 vector_store_repo = VectorStoreRepo(table_name="vectorstore", vector_size=1536)
 storage_facade = StorageFacade(minio_client, "lvn-ai-demo")
 document_repo = DocumentRepo(
@@ -55,7 +50,6 @@ simple_ai_system = SimpleAISystem(llm_facade, document_repo, vector_store_repo)
 
 __all__ = [
     "auth_repo",
-    "code_repo",
     "usage_repo",
     "vector_store_repo",
     "document_repo",
