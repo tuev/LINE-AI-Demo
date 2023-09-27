@@ -6,6 +6,8 @@ import {simpleExtract, simpleExtractResult} from '@/application/aiStore';
 import {isEmpty} from 'lodash';
 import AnswerReferences from './AnswerReferences.vue';
 import Paragraphs from '../components/Paragraphs.vue';
+import {recordUsage} from '@/application/usageStore';
+import {UsageType} from '@/domain/Usage';
 
 const namespace = ref('test');
 const question = ref('Thủ tục đăng ký bảo hiểm cho nhân viên LINE như thế nào?');
@@ -18,6 +20,16 @@ const onSearch = async () => {
 
 const onAnswer = () => {
     simpleExtract(question.value, selectedDocuments.value);
+};
+
+const onRecordUsage = () => {
+    if (!simpleExtractResult.value.hasData) return;
+    recordUsage(
+        question.value,
+        simpleExtractResult.value.value!.result,
+        UsageType.Extract,
+        simpleExtractResult.value.value!
+    );
 };
 </script>
 
@@ -89,6 +101,7 @@ const onAnswer = () => {
                 </v-row>
             </v-col>
             <v-col cols="3">
+                <v-btn @click="onRecordUsage" text="Record" color="secondary"></v-btn>
                 <h4 class="mb-3">References</h4>
                 <AnswerReferences />
             </v-col>

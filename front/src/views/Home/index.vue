@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {appRoutes} from '@/router';
+import {RouteName, appRoutes} from '@/router';
 import {onMounted} from 'vue';
 import {useRouter} from 'vue-router';
 
@@ -7,9 +7,13 @@ const router = useRouter();
 
 onMounted(() => {});
 
-const routes = [appRoutes.ManageFiles, appRoutes.AskQuestion];
+const routes = [
+    {name: 'Manage Files', routeName: appRoutes.ManageFiles.name},
+    {name: 'Ask Question', routeName: appRoutes.AskQuestion.name},
+    {name: 'List Usages', routeName: appRoutes.Usage.name},
+];
 
-const onRoute = (routeName: string) => {
+const onRoute = (routeName: RouteName) => {
     router.push({name: routeName});
 };
 </script>
@@ -22,7 +26,7 @@ const onRoute = (routeName: string) => {
             :key="i"
             color="primary"
             role="button"
-            @click="onRoute(route.name)"
+            @click="onRoute(route.routeName)"
         >
             <v-list-item-title v-text="route.name"></v-list-item-title>
         </v-list-item>

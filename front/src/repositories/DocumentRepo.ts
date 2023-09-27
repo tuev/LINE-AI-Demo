@@ -97,7 +97,7 @@ export class DocumentRepo {
         return TE.tryCatch(
             async () => {
                 const {data} = await this.client.get<Document[]>(
-                    `${this.prefix}/list_my/?skipt=${skip}&limit=${limit}`
+                    `${this.prefix}/list_my/?skip=${skip}&limit=${limit}`
                 );
                 return data;
             },
@@ -109,7 +109,7 @@ export class DocumentRepo {
         return TE.tryCatch(
             async () => {
                 const {data} = await this.client.get<Document[]>(
-                    `${this.prefix}/list_public/?skipt=${skip}&limit=${limit}`
+                    `${this.prefix}/list_public/?skip=${skip}&limit=${limit}`
                 );
                 return data;
             },
