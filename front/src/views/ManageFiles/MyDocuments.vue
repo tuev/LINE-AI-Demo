@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import {deleteDocument, deleteDocumentResult, processDocument} from '@/application/documentStore';
+import {
+    deleteDocument,
+    deleteDocumentResult,
+    listMyDocuments,
+    processDocument,
+} from '@/application/documentStore';
 import {Document, documentLink, uploadTimestampFormat} from '@/domain/Document';
 import {ref} from 'vue';
 import DocumentSummaryModal from './DocumentSummaryModal.vue';
 import {nextTick} from 'vue';
-import {computed} from 'vue';
-import {isEmpty} from 'lodash';
 
 const props = defineProps<{documents: Document[]}>();
 
@@ -21,21 +24,20 @@ const onOpenFile = (docId: string) => {
     window.open(documentLink(docId, 0), '_blank');
 };
 
-const selectedDocId = ref('');
-const selectedSummary = computed(() => {
-    if (isEmpty(props.documents)) return '';
-    return props.documents.find(d => d.doc_id === selectedDocId.value)?.summary || '';
-});
+const selectedDoc = ref<Document | null>(null);
 const isDocumentSummaryModalOpen = ref(false);
 
 const onOpenSummary = async (docId: string) => {
-    selectedDocId.value = docId;
+    selectedDoc.value = props.documents.find(d => d.doc_id === docId) || null;
     await nextTick();
     isDocumentSummaryModalOpen.value = true;
 };
 
-const onProcessDocument = () => {
-    processDocument(selectedDocId.value);
+const onProcessDocument = async () => {
+    if (!selectedDoc.value) return;
+    await processDocument(selectedDoc.value.doc_id);
+    isDocumentSummaryModalOpen.value = false;
+    listMyDocuments();
 };
 </script>
 
@@ -108,8 +110,9 @@ const onProcessDocument = () => {
     </v-list>
 
     <DocumentSummaryModal
+        v-if="selectedDoc"
         v-model="isDocumentSummaryModalOpen"
-        :summary="selectedSummary"
+        :document="selectedDoc"
         @process="onProcessDocument"
     />
 </template>

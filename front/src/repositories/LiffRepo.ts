@@ -29,7 +29,7 @@ export class LiffRepo {
 
     getIDToken() {
         const idToken = this.liff.getDecodedIDToken();
-        if (!idToken || !idToken.exp || idToken.exp < new Date().getTime() / 1000) {
+        if (!idToken?.exp || idToken.exp < new Date().getTime() / 1000) {
             this.logout();
             this.login();
             return;

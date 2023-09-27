@@ -7,7 +7,7 @@ import {AIRepo} from './AIRepo';
 
 const apiEndpoint = import.meta.env.VITE_API_ENDPOINT;
 const liffId = import.meta.env.VITE_LIFF_ID;
-const apiClient = axios.create({baseURL: apiEndpoint});
+const apiClient = axios.create({baseURL: apiEndpoint, timeout: 10_000});
 
 export const authRepo = new AuthRepo(apiClient);
 export const liffRepo = new LiffRepo(liff, liffId);
