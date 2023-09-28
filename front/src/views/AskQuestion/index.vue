@@ -4,10 +4,14 @@ import {ref} from 'vue';
 import SearchDocumentResults from './SearchDocumentResults.vue';
 import {simpleExtract, simpleExtractResult} from '@/application/aiStore';
 import {isEmpty} from 'lodash';
-import AnswerReferences from './AnswerReferences.vue';
+import AnswerReferences from '@/views/components/AnswerReferences.vue';
 import Paragraphs from '../components/Paragraphs.vue';
-import {recordUsage} from '@/application/usageStore';
+import {recordUsage, recordUsageResult} from '@/application/usageStore';
 import {UsageType} from '@/domain/Usage';
+import {useRouter} from 'vue-router';
+import {RouteName} from '@/router';
+
+const router = useRouter();
 
 const namespace = ref('test');
 const question = ref('Thủ tục đăng ký bảo hiểm cho nhân viên LINE như thế nào?');
@@ -22,14 +26,17 @@ const onAnswer = () => {
     simpleExtract(question.value, selectedDocuments.value);
 };
 
-const onRecordUsage = () => {
+const onRecordUsage = async () => {
     if (!simpleExtractResult.value.hasData) return;
-    recordUsage(
+    await recordUsage(
         question.value,
         simpleExtractResult.value.value!.result,
         UsageType.Extract,
         simpleExtractResult.value.value!
     );
+    if (recordUsageResult.value.hasData) {
+        router.push({name: RouteName.Usage});
+    }
 };
 </script>
 
@@ -101,9 +108,20 @@ const onRecordUsage = () => {
                 </v-row>
             </v-col>
             <v-col cols="3">
-                <v-btn @click="onRecordUsage" text="Record" color="secondary"></v-btn>
+                <div class="mb-3">
+                    <v-btn
+                        @click="onRecordUsage"
+                        :disabled="recordUsageResult.loading"
+                        :loading="recordUsageResult.loading"
+                        text="Record"
+                        color="secondary"
+                    ></v-btn>
+                    <div v-if="recordUsageResult.hasError" class="text-red">
+                        {{ recordUsageResult.err }}
+                    </div>
+                </div>
                 <h4 class="mb-3">References</h4>
-                <AnswerReferences />
+                <AnswerReferences :references="simpleExtractResult.value?.references || []" />
             </v-col>
         </v-row>
     </v-container>

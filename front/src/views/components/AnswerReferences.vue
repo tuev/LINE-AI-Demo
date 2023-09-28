@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import {simpleExtractResult} from '@/application/aiStore';
 import {documentLink, similarityFormat} from '@/domain/Document';
-import {AggerateReference, aggerateReferences} from '@/domain/SimpleSystem';
+import {AggerateReference, Reference, aggerateReferences} from '@/domain/SimpleSystem';
 import {computed} from 'vue';
 
+const props = defineProps<{references: Reference[]}>();
+
 const references = computed<AggerateReference[]>(() => {
-    if (!simpleExtractResult.value.hasData || !simpleExtractResult.value.value) return [];
-    return aggerateReferences(simpleExtractResult.value.value.references);
+    return aggerateReferences(props.references);
 });
 
 const onClickReference = (docId: string, page: number) => {

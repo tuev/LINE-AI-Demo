@@ -29,6 +29,9 @@ export class UsageRepo {
                 const {data} = await this.client.get<Usage[]>(
                     `${this.prefix}/list_by_timestamp/?skip=${skip}&limit=${limit}`
                 );
+                for (const d of data) {
+                    d.timestamp = new Date(d.timestamp);
+                }
                 return data;
             },
             (err: any) => AppError.fromAxiosError(err)
