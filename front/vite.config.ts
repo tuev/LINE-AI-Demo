@@ -9,7 +9,7 @@ export default ({mode}) => {
     return defineConfig({
         plugins: [vue(), basicSsl()],
         server: {
-            host: 'local-line-ai-demo.linecorp.com',
+            host: 'local-line-ai-demo.line-alpha.me',
             port: 5173,
             https: true,
             proxy: {
