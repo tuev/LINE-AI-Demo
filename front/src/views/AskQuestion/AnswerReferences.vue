@@ -1,29 +1,12 @@
 <script setup lang="ts">
 import {simpleExtractResult} from '@/application/aiStore';
 import {documentLink, similarityFormat} from '@/domain/Document';
+import {AggerateReference, aggerateReferences} from '@/domain/SimpleSystem';
 import {computed} from 'vue';
 
-interface AggerateReference {
-    doc_id: string;
-    filename: string;
-    pages: {page_number: number; similarity: number}[];
-}
-
-const aggeratedReferences = computed(() => {
+const references = computed<AggerateReference[]>(() => {
     if (!simpleExtractResult.value.hasData || !simpleExtractResult.value.value) return [];
-    return simpleExtractResult.value.value.references.reduce((acc, cur) => {
-        const pageInfo = {
-            page_number: cur.metadata.page_number,
-            similarity: cur.similarity,
-        };
-        const foundIndex = acc.findIndex(v => v.doc_id === cur.doc_id);
-        if (foundIndex < 0) {
-            acc.push({doc_id: cur.doc_id, filename: cur.filename, pages: [pageInfo]});
-        } else {
-            acc[foundIndex].pages.push(pageInfo);
-        }
-        return acc;
-    }, [] as AggerateReference[]);
+    return aggerateReferences(simpleExtractResult.value.value.references);
 });
 
 const onClickReference = (docId: string, page: number) => {
@@ -33,7 +16,7 @@ const onClickReference = (docId: string, page: number) => {
 
 <template>
     <v-row>
-        <v-col v-for="(reference, i) in aggeratedReferences" cols="12">
+        <v-col v-for="(reference, i) in references" cols="12">
             <div class="font-weight-bold mb-2">{{ reference.filename }}</div>
             <div>
                 <span class="me-3">Pages:</span>
@@ -51,7 +34,7 @@ const onClickReference = (docId: string, page: number) => {
                     </span>
                 </v-chip>
             </div>
-            <hr v-if="i < aggeratedReferences.length - 1" class="mt-3"/>
+            <hr v-if="i < references.length - 1" class="mt-3" />
         </v-col>
     </v-row>
 </template>
