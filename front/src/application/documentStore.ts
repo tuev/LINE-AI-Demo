@@ -91,13 +91,38 @@ export const listMyDocumentsResult = ref(new Result<string, Document[]>([]));
 export const listMyDocuments = async () => {
     listMyDocumentsResult.value.setLoading();
     await pipe(
-        documentRepo.listMy(0, 10),
+        documentRepo.listMy(0, 100),
         TE.fold(
             err => T.of(listMyDocumentsResult.value.setError(err.msg)),
             res => T.of(listMyDocumentsResult.value.setValue(res))
         )
     )();
 };
+
+export const listPublicDocumentResult = ref(new Result<string, Document[]>([]));
+
+export const listPublicDocument = async () => {
+    listPublicDocumentResult.value.setLoading();
+    await pipe(
+        documentRepo.listPublic(0, 100),
+        TE.fold(
+            err => T.of(listPublicDocumentResult.value.setError(err.msg)),
+            res => {
+                if (!listMyDocumentsResult.value.hasData) {
+                    return T.of(listPublicDocumentResult.value.setValue(res));
+                }
+                const myDocumentIds = listMyDocumentsResult.value.value.map(d => d.doc_id);
+                const filteredMyDocuments = res.filter(doc => !myDocumentIds.includes(doc.doc_id));
+                return T.of(listPublicDocumentResult.value.setValue(filteredMyDocuments));
+            }
+        )
+    )();
+};
+
+export const listAllDocuments = async () => {
+    await listMyDocuments();
+    await listPublicDocument();
+}
 
 export const deleteDocumentResult = ref(new Result<string, string | null>(''));
 

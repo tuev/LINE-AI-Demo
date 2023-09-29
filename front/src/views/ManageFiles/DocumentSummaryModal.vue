@@ -4,7 +4,7 @@ import Paragraphs from '@/views/components/Paragraphs.vue';
 import {processDocumentResult} from '@/application/documentStore';
 import {Document} from '@/domain/Document';
 
-const props = defineProps<{modelValue: boolean; document: Document}>();
+const props = defineProps<{modelValue: boolean; document: Document; readonly: boolean}>();
 const emit = defineEmits<{
     (event: 'update:modelValue', value: boolean): void;
     (event: 'process'): void;
@@ -34,6 +34,7 @@ const localValue = computed({
                 <v-spacer></v-spacer>
 
                 <v-btn
+                    v-if="readonly === false"
                     @click="$emit('process')"
                     :disabled="
                         props.document.process_status === 'processing' ||

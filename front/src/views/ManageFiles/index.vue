@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {
-    listMyDocuments,
+    listAllDocuments,
     listMyDocumentsResult,
+    listPublicDocumentResult,
     uploadFile,
     uploadFileResult,
     uploadLandpress,
@@ -29,11 +30,11 @@ const onUploadLandpress = async () => {
 };
 
 const onListMyDocuments = () => {
-    listMyDocuments();
+    listAllDocuments();
 };
 
 onMounted(() => {
-    listMyDocuments();
+    listAllDocuments();
 });
 
 const isUploadHtmlModalOpen = ref(false);
@@ -112,6 +113,7 @@ const onUploadText = async (value: {title: string; text: string}) => {
                 </div>
             </v-col>
             <v-col cols="8">
+                <h6>My Documents</h6>
                 <v-progress-circular
                     v-if="listMyDocumentsResult.loading"
                     indeterminate
@@ -122,6 +124,20 @@ const onUploadText = async (value: {title: string; text: string}) => {
                 <MyDocuments
                     v-else-if="listMyDocumentsResult.hasData"
                     :documents="listMyDocumentsResult.value"
+                    :readonly="false"
+                />
+                <h6>Public Documents</h6>
+                <v-progress-circular
+                    v-if="listPublicDocumentResult.loading"
+                    indeterminate
+                ></v-progress-circular>
+                <v-row v-else-if="listPublicDocumentResult.hasError">
+                    {{ listPublicDocumentResult.err }}
+                </v-row>
+                <MyDocuments
+                    v-else-if="listPublicDocumentResult.hasData"
+                    :documents="listPublicDocumentResult.value"
+                    :readonly="true"
                 />
             </v-col>
         </v-row>
