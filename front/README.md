@@ -1,18 +1,48 @@
-# Vue 3 + TypeScript + Vite
+# LINE-AI-Demo - FRONT END
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+This is the development document for FRONT END for [LINE-AI-DEMO](/README.md) project.
 
-## Recommended IDE Setup
+## Development
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+### Prerequisites
 
-## Type Support For `.vue` Imports in TS
+- Node >= 20 with NPM installed
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
+General FE development can use the alpha Back End server. You need to be in the LINE internal network to connect to this server.
 
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
+The server status can be check with this end point:
 
-1. Disable the built-in TypeScript Extension
-   1. Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-   2. Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
+```bash
+curl https://ai.line-alpha.me/healthz
+```
+
+### Setup
+
+Because this application using [LIFF - LINE Front-end Framework](https://developers.line.biz/en/docs/liff/overview/), we need to setup the hosting that serve `https` and register the application ID with LIFF framework.
+
+I already setup with the domain `local-line-ai-demo.line-alpha.me`.
+
+During development you need to setup your local hosts name to resolve to this domain.
+
+```bash
+sudo vi /etc/hosts
+```
+
+Add this line into the file
+
+```
+127.0.0.1       local-line-ai-demo.line-alpha.me
+```
+
+### Start local development
+
+```bash
+npm install
+npm run dev -- --mode alpha
+```
+
+This will use to the alpha server as Back end API.
+
+## Roadmap
+
+(under construction)

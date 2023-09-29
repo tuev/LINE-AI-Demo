@@ -18,21 +18,27 @@ If already built. Just need:
 docker compose up -d
 ```
 
+## Frontend
+
+Built with [Vue](https://vuejs.org) and [Vuetify](https://vuetifyjs.com/). And deployed to [Cloudflare Page](https://pages.cloudflare.com/).
+
+Frontend development does not need to build and run the local Docker if it is not necessary.
+
+More information inside the [front/README.md](/front/README.md)
+
 ## Vector database
+
+[pgvector](https://github.com/pgvector/pgvector)
+
+Using PostgreSQL with Vector database plugin.
 
 ### Create Vector plugin
 
-The image we use already support vectors. But we need to activate it using the SQL below.
+The image we use already support vectors. We just need to activate it using the SQL below.
 
 ```SQL
 CREATE EXTENSION vector;
 ```
-
-## Frontend
-
-Built with Vue and Vuetify. And deployed to Cloudflare Page.
-
-More information inside the [front/README.md](/front/README.md)
 
 ## Object Storage - Minio as S3 service
 
@@ -41,6 +47,8 @@ More information inside the [front/README.md](/front/README.md)
 Create new access and secret key for S3 and setup it in .env file.
 
 Create new bucket with name `lvn-ai-demo`
+
+## Environment file .env
 
 Example:
 
