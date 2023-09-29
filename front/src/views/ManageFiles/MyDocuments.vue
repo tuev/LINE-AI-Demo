@@ -2,7 +2,7 @@
 import {
     deleteDocument,
     deleteDocumentResult,
-    listMyDocuments,
+    listAllDocuments,
     processDocument,
 } from '@/application/documentStore';
 import {Document, documentLink, uploadTimestampFormat} from '@/domain/Document';
@@ -10,7 +10,7 @@ import {ref} from 'vue';
 import DocumentSummaryModal from './DocumentSummaryModal.vue';
 import {nextTick} from 'vue';
 
-const props = defineProps<{documents: Document[]}>();
+const props = defineProps<{documents: Document[]; readonly: boolean}>();
 
 const onCopyDocId = (docId: string) => {
     navigator.clipboard.writeText(docId);
@@ -37,7 +37,7 @@ const onProcessDocument = async () => {
     if (!selectedDoc.value) return;
     await processDocument(selectedDoc.value.doc_id);
     isDocumentSummaryModalOpen.value = false;
-    listMyDocuments();
+    listAllDocuments();
 };
 </script>
 
@@ -95,14 +95,16 @@ const onProcessDocument = async () => {
                         <v-list-item @click="onCopyDocId(doc.doc_id)">
                             <v-list-item-title>Copy ID</v-list-item-title>
                         </v-list-item>
-                        <v-list-item v-if="deleteDocumentResult.loading">
-                            <v-progress-circular indeterminate></v-progress-circular>
-                        </v-list-item>
-                        <v-list-item v-else @click="onDelete(doc.doc_id)">
-                            <v-list-item-title>
-                                <span class="text-red">Delete</span>
-                            </v-list-item-title>
-                        </v-list-item>
+                        <template v-if="readonly === false">
+                            <v-list-item v-if="deleteDocumentResult.loading">
+                                <v-progress-circular indeterminate></v-progress-circular>
+                            </v-list-item>
+                            <v-list-item v-else @click="onDelete(doc.doc_id)">
+                                <v-list-item-title>
+                                    <span class="text-red">Delete</span>
+                                </v-list-item-title>
+                            </v-list-item>
+                        </template>
                     </v-list>
                 </v-menu>
             </template>
@@ -112,6 +114,7 @@ const onProcessDocument = async () => {
     <DocumentSummaryModal
         v-if="selectedDoc"
         v-model="isDocumentSummaryModalOpen"
+        :readonly="readonly"
         :document="selectedDoc"
         @process="onProcessDocument"
     />
