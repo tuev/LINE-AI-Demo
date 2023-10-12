@@ -1,4 +1,5 @@
 from typing import List
+
 from langchain.prompts import (
     AIMessagePromptTemplate,
     ChatPromptTemplate,
@@ -6,8 +7,6 @@ from langchain.prompts import (
     SystemMessagePromptTemplate,
 )
 from langchain.schema import BaseMessage
-
-from repository.llm_facade import ChatModelEnum, LLMFacade
 
 
 class BaseAISystem:
@@ -77,14 +76,3 @@ class BaseAISystem:
             )
         else:
             raise Exception("Cannot load BaseAISystem message templates")
-
-    @staticmethod
-    def do_llm_with_model(llm: LLMFacade, token: str, model: ChatModelEnum):
-        def _do_llm(_messages: List[BaseMessage]):
-            return llm.internal_chat(
-                model=model,
-                messages=_messages,
-                internal_token=token,
-            )
-
-        return _do_llm
