@@ -1,13 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import json
 from typing import Annotated, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from peewee import CharField, DateTimeField, DoesNotExist
+from peewee import CharField, DateTimeField, DoesNotExist, IntegerField, TextField
 
 import requests
 from pydantic import BaseModel
 
-from repository.base_db import BaseDBModel, from_datetime, from_str, get_db
+from repository.base_db import BaseDBModel, from_datetime, from_int, from_str, get_db
 from repository.helpers import cprint_warn, get_timestamp
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -58,6 +59,17 @@ def check_token_expired(token: LineUserInternalToken | None) -> LineUserInternal
     return token
 
 
+class LineUserInfoDB(BaseDBModel):
+    iss = CharField()
+    sub = CharField()
+    aud = CharField()
+    exp = IntegerField()
+    iat = IntegerField()
+    amr = TextField()
+    name = CharField()
+    picture = CharField()
+
+
 class LineUserInfo(BaseModel):
     iss: str
     sub: str
@@ -67,6 +79,31 @@ class LineUserInfo(BaseModel):
     amr: List[str]
     name: str
     picture: str
+
+    def to_db(self) -> LineUserInfoDB:
+        return LineUserInfoDB(
+            iss=self.iss,
+            sub=self.sub,
+            aud=self.aud,
+            exp=self.exp,
+            iat=self.iat,
+            amr=json.dumps(self.amr),
+            name=self.name,
+            picture=self.picture,
+        )
+
+    @staticmethod
+    def from_db(db_model: LineUserInfoDB):
+        return LineUserInfo(
+            iss=from_str(db_model.iss),
+            sub=from_str(db_model.sub),
+            aud=from_str(db_model.aud),
+            exp=from_int(db_model.exp),
+            iat=from_int(db_model.iat),
+            amr=from_str(db_model.amr).split(","),
+            name=from_str(db_model.name),
+            picture=from_str(db_model.picture),
+        )
 
 
 class AuthRepo:
@@ -127,7 +164,25 @@ class AuthRepo:
     async def get_current_user(
         self, token: Annotated[str, Depends(oauth2_scheme)]
     ) -> LineUserInfo:
-        return self.verify_id_token(token)
+        user_data_jwk = self.verify_id_token(token)
+        user_data_db = LineUserInfoDB.get_or_none(
+            LineUserInfoDB.sub == user_data_jwk.sub
+        )
+        user_data = (
+            LineUserInfo.from_db(user_data_db) if user_data_db is not None else None
+        )
+
+        if user_data is None:
+            user_data_jwk.to_db().save()
+        else:
+            time_now = get_timestamp()
+            user_data_timestamp = datetime.fromtimestamp(float(user_data.iat)).replace(
+                tzinfo=timezone.utc
+            )
+            if time_now - user_data_timestamp > timedelta(minutes=5):
+                user_data_jwk.to_db().save()
+
+        return user_data_jwk
 
     def set_internal_token(self, user_id: str, token: str):
         token_splits = token.split("|")
@@ -159,4 +214,4 @@ class AuthRepo:
 
 
 # Create table if not exists
-get_db().create_tables([LineUserInternalTokenDB])
+get_db().create_tables([LineUserInternalTokenDB, LineUserInfoDB])

@@ -76,7 +76,7 @@ class SimpleAISystem:
             for ref in references
         ]
 
-    def extract(self, token: str, question: str, documents: List[str]) -> ExtractResult:
+    def extract(self, question: str, documents: List[str]) -> ExtractResult:
         start_ts = get_timestamp()
         query_vector = self._llm.openai_embeddings(question)
         references = self._vector_store_repo.similarity_search_by_documents(
@@ -96,12 +96,8 @@ class SimpleAISystem:
         ).to_messages()
         cprint_green(messages_to_str(messages_prompt))
 
-        do_llm_chat4 = BaseAISystem.do_llm_with_model(
-            self._llm,
-            token,
-            ChatModelEnum.Chat_4,
-        )
-        planning_res = do_llm_chat4(messages_prompt)
+        chat = self._llm.create_chat(ChatModelEnum.Chat_4, temperature=0.1)
+        planning_res = chat(messages_prompt).content
 
         cprint_cyan(planning_res)
         cprint_cyan("-" * 80)

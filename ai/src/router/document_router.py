@@ -331,7 +331,11 @@ def list_my(
 
 
 @document_router.get("/list_public/")
-def list_public(skip: int = 0, limit: int = 10):
+def list_public(
+    user: Annotated[LineUserInfo, Depends(auth_repo.get_current_user)],
+    skip: int = 0,
+    limit: int = 10,
+):
     docs = document_repo.list_document_public(skip, limit)
     return docs
 
