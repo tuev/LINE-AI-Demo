@@ -83,9 +83,6 @@ def upload_file(
             detail=f"The file must be smaller than {document_repo.MAX_SIZE_TEXT}.",
         )
 
-    internal_token = auth_repo.get_token(user.sub)
-    internal_token = check_token_expired(internal_token)
-
     doc_id = document_repo.create(
         namespace=namespace,
         filename=filename,
@@ -103,7 +100,6 @@ def upload_file(
 
     background_tasks.add_task(
         document_repo.process_vector_and_summary,
-        internal_token=internal_token.token,
         doc_id=doc_id,
     )
 
@@ -136,9 +132,6 @@ def upload_text(
             detail=f"body is too small. must have more than {min_body} characters",
         )
 
-    internal_token = auth_repo.get_token(user.sub)
-    internal_token = check_token_expired(internal_token)
-
     text_encode = body.text.encode(encoding="utf-8")
 
     doc_id = document_repo.create(
@@ -158,7 +151,6 @@ def upload_text(
 
     background_tasks.add_task(
         document_repo.process_vector_and_summary,
-        internal_token=internal_token.token,
         doc_id=doc_id,
     )
 
