@@ -2,6 +2,7 @@
 .vscode
 secret.yaml
 .env
+.env.local
 
 /blob-data
 /db-data

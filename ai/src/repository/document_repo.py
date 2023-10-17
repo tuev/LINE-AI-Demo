@@ -252,49 +252,41 @@ class DocumentRepo(DbConnectBase):
         closest_indices = sorted(closest_indices)
         return closest_indices
 
-    def _get_summary_of_text(self, internal_token: str, text: str):
+    def _get_summary_of_text(self, text: str):
         messages = self._summary_prompt.format_prompt(text=text).to_messages()
         cprint_cyan(messages_to_str(messages))
-        summary = self._llm.internal_chat(
-            model=ChatModelEnum.Chat_3_5,
-            internal_token=internal_token,
-            messages=messages,
-        )
+        chat = self._llm.create_chat(model=ChatModelEnum.Chat_3_5, temperature=0.1)
+        summary = chat(messages=messages).content
         cprint_green(">" * 80)
         cprint_green(summary)
         cprint_green("=" * 80)
 
         return summary
 
-    def _get_combined_summary(self, internal_token: str, texts: List[str]):
+    def _get_combined_summary(self, texts: List[str]):
         combined_summary_list = "\n---\n".join(texts)
         messages = self._summary_all_prompt.format_prompt(
             text=combined_summary_list
         ).to_messages()
         cprint_cyan(messages_to_str(messages))
-        summary_all = self._llm.internal_chat(
-            model=ChatModelEnum.Chat_4,
-            internal_token=internal_token,
-            messages=messages,
-        )
+        chat = self._llm.create_chat(model=ChatModelEnum.Chat_3_5, temperature=0.1)
+        summary_all = chat(messages=messages).content
         cprint_cyan(summary_all)
 
         return summary_all
 
-    def summary_texts(
-        self, internal_token: str, texts: List[str]
-    ) -> Tuple[str, List[float]]:
+    def summary_texts(self, texts: List[str]) -> Tuple[str, List[float]]:
         summaries: List[str] = []
         for text in texts:
-            summary = self._get_summary_of_text(internal_token, text)
+            summary = self._get_summary_of_text(text)
             summaries.append(summary)
 
-        summary_all = self._get_combined_summary(internal_token, summaries)
+        summary_all = self._get_combined_summary(summaries)
         summary_vector = self._llm.openai_embeddings(summary_all)
 
         return summary_all, summary_vector
 
-    def process_vector_and_summary(self, internal_token: str, doc_id: str):
+    def process_vector_and_summary(self, doc_id: str):
         data = self.get_file_or_not_found(doc_id)
         item = self.get_doc_or_not_found(id=doc_id)
 
@@ -335,7 +327,7 @@ class DocumentRepo(DbConnectBase):
             cluster_indices = self._get_document_cluster_for_summary(doc_embeddings)
 
             summary_all, summary_vector = self.summary_texts(
-                internal_token, [doc_results[i].text for i in cluster_indices]
+                [doc_results[i].text for i in cluster_indices]
             )
 
             # Clean up existing vectors for idempotent processing.
