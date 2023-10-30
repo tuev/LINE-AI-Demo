@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 from repository import auth_repo, simple_ai_system
-from repository.auth_repo import LineUserInfo, check_token_expired
+from repository.auth_repo import LineUserInfo
 
 ai_router = APIRouter(prefix="/ai")
 
