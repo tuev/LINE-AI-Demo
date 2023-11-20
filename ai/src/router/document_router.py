@@ -2,6 +2,7 @@ import io
 import os
 import tempfile
 from typing import Annotated, List
+
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -14,10 +15,8 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-
-
-from repository import document_download, document_parser, document_repo, auth_repo
-from repository.auth_repo import LineUserInfo, check_token_expired
+from repository import auth_repo, document_download, document_parser, document_repo
+from repository.auth_repo import LineUserInfo
 from repository.document_repo import (
     DocumentMetadata,
     DocumentSourceTypeEnum,
@@ -181,9 +180,6 @@ def upload_landpress(
             detail=f"body is too small. must have more than {min_body} characters",
         )
 
-    internal_token = auth_repo.get_token(user.sub)
-    internal_token = check_token_expired(internal_token)
-
     text_encode = doc.body.encode(encoding="utf-8")
 
     doc_id = document_repo.create(
@@ -207,7 +203,6 @@ def upload_landpress(
 
     background_tasks.add_task(
         document_repo.process_vector_and_summary,
-        internal_token=internal_token.token,
         doc_id=doc_id,
     )
 
@@ -258,12 +253,8 @@ def do_process(
     doc_id: str,
     background_tasks: BackgroundTasks,
 ):
-    internal_token = auth_repo.get_token(user.sub)
-    internal_token = check_token_expired(internal_token)
-
     background_tasks.add_task(
         document_repo.process_vector_and_summary,
-        internal_token=internal_token.token,
         doc_id=doc_id,
     )
 

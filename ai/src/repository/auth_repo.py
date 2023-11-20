@@ -3,65 +3,20 @@ import json
 from typing import Annotated, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from peewee import CharField, DateTimeField, DoesNotExist, IntegerField, TextField
+from peewee import CharField, IntegerField, TextField
 
 import requests
 from pydantic import BaseModel
 
-from repository.base_db import BaseDBModel, from_datetime, from_int, from_str, get_db
+from repository.base_db import BaseDBModel, from_int, from_str, get_db
 from repository.helpers import cprint_warn, get_timestamp
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-class LineUserInternalTokenDB(BaseDBModel):
-    user_id = CharField(unique=True)
-    token = CharField()
-    timestamp = DateTimeField()
-
-
-class LineUserInternalToken(BaseModel):
-    user_id: str
-    token: str
-    timestamp: datetime
-
-    @staticmethod
-    def from_db(v: LineUserInternalTokenDB):
-        return LineUserInternalToken(
-            user_id=from_str(v.user_id),
-            token=from_str(v.token),
-            timestamp=from_datetime(v.timestamp),
-        )
-
-    def is_expired(
-        self,
-        expire_duration: timedelta = timedelta(days=1),
-        allow_diff_delta: timedelta = timedelta(minutes=30),
-    ) -> bool:
-        time_now = get_timestamp()
-        expired_ts = self.timestamp + expire_duration
-        return expired_ts - time_now < allow_diff_delta
-
-
-def check_token_expired(token: LineUserInternalToken | None) -> LineUserInternalToken:
-    if token is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="internal token not found",
-        )
-
-    if token.is_expired():
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="unable to proceed because the internal token is about to expire.",
-        )
-
-    return token
-
-
 class LineUserInfoDB(BaseDBModel):
     iss = CharField()
-    sub = CharField()
+    sub = CharField(unique=True)
     aud = CharField()
     exp = IntegerField()
     iat = IntegerField()
@@ -161,6 +116,10 @@ class AuthRepo:
 
         return user
 
+    def get_users(self, user_ids: List[str]):
+        users_db = LineUserInfoDB.select().where(LineUserInfoDB.sub.in_(user_ids))
+        return [LineUserInfo.from_db(user_db) for user_db in users_db]
+
     async def get_current_user(
         self, token: Annotated[str, Depends(oauth2_scheme)]
     ) -> LineUserInfo:
@@ -172,46 +131,26 @@ class AuthRepo:
             LineUserInfo.from_db(user_data_db) if user_data_db is not None else None
         )
 
-        if user_data is None:
+        if user_data_db is None or user_data is None:
             user_data_jwk.to_db().save()
         else:
-            time_now = get_timestamp()
+            # Check if the record in db is old one. If it is too old then we need to update it.
             user_data_timestamp = datetime.fromtimestamp(float(user_data.iat)).replace(
                 tzinfo=timezone.utc
             )
-            if time_now - user_data_timestamp > timedelta(minutes=5):
-                user_data_jwk.to_db().save()
+            delta_user_issue_at_timestamp = get_timestamp() - user_data_timestamp
+            if delta_user_issue_at_timestamp > timedelta(minutes=5):
+                print(
+                    "nanii >>",
+                    user_data_db.get_id(),
+                    delta_user_issue_at_timestamp,
+                    user_data.iat,
+                    user_data_jwk.iat,
+                )
+                LineUserInfoDB.set_by_id(user_data_db.get_id(), user_data_jwk.dict())
 
         return user_data_jwk
 
-    def set_internal_token(self, user_id: str, token: str):
-        token_splits = token.split("|")
-        if len(token_splits) != 3:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="wrong token form"
-            )
-        timestamp = datetime.fromtimestamp(float(token_splits[1]))
-        (
-            LineUserInternalTokenDB.insert(
-                user_id=user_id, token=token, timestamp=timestamp
-            )
-            .on_conflict(
-                conflict_target=[LineUserInternalTokenDB.user_id],
-                update={
-                    LineUserInternalTokenDB.token: token,
-                    LineUserInternalTokenDB.timestamp: timestamp,
-                },
-            )
-            .execute()
-        )
-
-    def get_token(self, user_id: str) -> LineUserInternalToken | None:
-        try:
-            item = LineUserInternalTokenDB.get(user_id=user_id)
-            return LineUserInternalToken.from_db(item)
-        except DoesNotExist:
-            return None
-
 
 # Create table if not exists
-get_db().create_tables([LineUserInternalTokenDB, LineUserInfoDB])
+get_db().create_tables([LineUserInfoDB])

@@ -12,6 +12,7 @@ from repository.llm_facade import LLMFacade
 from repository.storage_facade import StorageFacade
 from repository.usage_repo import UsageRepo
 from repository.vector_store_repo import VectorStoreRepo
+from repository.workspace_repo import WorkspaceRepo
 
 load_dotenv()
 
@@ -47,6 +48,7 @@ document_repo = DocumentRepo(
 )
 document_download = DocumentDownload()
 simple_ai_system = SimpleAISystem(llm_facade, document_repo, vector_store_repo)
+workspace_repo = WorkspaceRepo()
 
 __all__ = [
     "auth_repo",
