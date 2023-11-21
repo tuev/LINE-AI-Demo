@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+    ai:
+        ports:
+            - 8081:8080
+        command: "sh -c 'sleep infinity'"
+
+    database:
+        ports:
+            - 5434:5432
+
+    unstructured:
+        ports:
+            - '8000:8000'
+
+    minio:
+        ports:
+            - 9000:9000
+            - 9090:9090

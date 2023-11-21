@@ -1,0 +1,5 @@
+version: '3.9'
+services:
+    ai:
+        ports:
+            - 8081:8080

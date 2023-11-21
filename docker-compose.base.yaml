@@ -15,17 +15,12 @@ services:
             - S3_SECRET_KEY=${S3_SECRET_KEY}
             - S3_REGION=${S3_REGION}
             - OPENAI_KEY=${OPENAI_KEY}
-        ports:
-            - 8081:8080
-        command: "sh -c 'sleep infinity'"
 
     database:
         image: 'ankane/pgvector'
         volumes:
             - ./db-data:/var/lib/postgresql/data/
             - ./ai/init.sql:/docker-entrypoint-initdb.d/init.sql
-        ports:
-            - 5434:5432
         environment:
             POSTGRES_USER: root
             POSTGRES_PASSWORD: password
@@ -33,8 +28,6 @@ services:
 
     unstructured:
         image: quay.io/unstructured-io/unstructured-api:0.0.43
-        # ports:
-        #     - '8000:8000'
 
     minio:
         image: quay.io/minio/minio
@@ -43,7 +36,4 @@ services:
         environment:
             MINIO_ROOT_USER: root
             MINIO_ROOT_PASSWORD: password
-        ports:
-            - 9000:9000
-            - 9090:9090
         command: server /data --console-address ":9090"
