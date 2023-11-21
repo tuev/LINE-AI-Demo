@@ -23,6 +23,7 @@ services:
         image: 'ankane/pgvector'
         volumes:
             - ./db-data:/var/lib/postgresql/data/
+            - ./ai/init.sql:/docker-entrypoint-initdb.d/init.sql
         ports:
             - 5434:5432
         environment:
@@ -32,8 +33,8 @@ services:
 
     unstructured:
         image: quay.io/unstructured-io/unstructured-api:0.0.43
-        ports:
-            - '8000:8000'
+        # ports:
+        #     - '8000:8000'
 
     minio:
         image: quay.io/minio/minio
