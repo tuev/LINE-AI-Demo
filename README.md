@@ -15,7 +15,19 @@ docker compose up -d --build
 If already built. Just need:
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.base.yaml -f docker-compose.dev.yaml up -d
+```
+
+To run the environment
+
+```bash
+docker exec -it line-ai-demo-ai-1 bash
+```
+
+To serve server line-ai (run this command inside the container)
+
+```bash
+sh run-dev.sh
 ```
 
 ## Frontend
